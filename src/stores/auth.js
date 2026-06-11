@@ -1,6 +1,6 @@
 import {defineStore} from 'pinia'
 import {ref, computed} from 'vue'
-import {database} from '../database'
+import {database} from '@/database/db'
 
 export const useAuthStore = defineStore('auth', () => {
 
