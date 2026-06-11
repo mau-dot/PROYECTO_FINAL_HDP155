@@ -6,25 +6,25 @@ import Dexie from 'dexie';
 
 
 // Creamos la instancia de la base de datos con su nombre
-export const db = new Dexie('HDP_EduKids_DB');
+export const database = new Dexie('HDP_EduKids_DB');
 
 // ==========================================
 // 2. DEFINICION DE TABLAS
 // ==========================================
 // nota en dixie no se necesita declarar todo lo principla la llave primaria (++)
-db.version(1).stores({
-  // Usuarios: '++id' autoincremental. filtro por 'username' (para el login), 'role' y 'level'.
-  users: '++id, username, age, role, level', 
+database.version(1).stores({
+  // Usuarios: '++id' autoincremental. filtro por 'nombreusuario' (para el login), 'rol' y 'nivel'.
+  usuarios: '++id, nombreusuario, edad, rol, nivel', 
   
-  // Lecciones: filtro por 'level' para cargar rapido las lecciones que le tocan al niño por edad.
-  lessons: '++id, level, title', 
+  // Lecciones: filtro por 'nivel' para cargar rapido las lecciones que le tocan al niño por edad.
+  lecciones: '++id, nivel, titulo, tipo, contenido', 
   
   // Medallas: solo necesitamos buscar por nombre o id.
-  medals: '++id, name',
+  medallas: '++id, nombre',
   
   // Progreso: registra que lecciones ha completado cada niño. 
   // El índice compuesto '[userId+lessonId]' verificacion rapida (si un niño ya hizo una lección específica.)
-  progress: '++id, userId, level, isCompleted, [userId+lessonId]' 
+  progress: '++id, usuarioId, nivel, esCompletado, [usuarioId+leccionId]' 
 });
 
 // ==========================================
@@ -32,23 +32,23 @@ db.version(1).stores({
 // ==========================================
 // Este evento se dispara SOLO la primera vez que se crea la base de datos en el navegador.
 // Nos sirve para tener datos de prueba listos justo después de clonar el repositorio.
-db.on('populate', async () => {
+database.on('populate', async () => {
   
   // 3.1 Crear el usuario Administrador por defecto
-  await db.users.add({ 
-    username: 'admin', 
+  await database.usuarios.add({ 
+    nombreusuario: 'admin', 
     password: '123', // Para fines académicos y de prueba inicial
-    role: 'admin' 
+    rol: 'admin' 
   });
 
   // 3.2 Crear un usuario Niño de prueba (Nivel 1: 1-2 años)
-  await db.users.add({
-    username: 'niño_prueba',
+  await database.usuarios.add({
+    nombreusuario: 'niño_prueba',
     password: '123',
-    role: 'child',
-    level: 1, // Inicia en el nivel 1 de colores y hábitos
-    age: 2,//edad
-    medalsCount: 0 // Campo adicional que no necesita estar indexado arriba
+    rol: 'child',
+    nivel: 1, // Inicia en el nivel 1 de colores y hábitos
+    edad: 2,//edad
+    medallasCount: 0 // Campo adicional que no necesita estar indexado arriba
   });
 
 
