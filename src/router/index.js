@@ -14,6 +14,9 @@ import Level2View from '@/views/levels/Level2View.vue'
 import Level3View from '@/views/levels/Level3View.vue'
 import Level4View from '@/views/levels/Level4View.vue'
 
+import RegisterView from '@/views/RegisterView.vue'
+import ProfileView from '@/views/ProfileView.vue'
+
 //configuracion de rutas
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,6 +24,15 @@ const router = createRouter({
     //rutas publicas
     {path: '/', name: 'home', component:HomeView},
     {path: '/login', name: 'login', component:LoginView},
+    { path: '/register', name: 'register', component: RegisterView },
+
+    //ruta de perfil protegida, solo requiere un usuario logeado
+    { 
+      path: '/perfil', 
+      name: 'profile', 
+      component: ProfileView, 
+      meta: { requiereAuth: true } 
+    },
 
     //rutas del administrador (protegidas)
     {
