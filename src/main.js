@@ -4,6 +4,12 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 
+// ==========================================
+// IMPORTACION DE BOOTSTRAP 5 (GLOBAL)
+// ==========================================
+import 'bootstrap/dist/css/bootstrap.min.css'
+import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+
 const app = createApp(App)
 
 app.use(createPinia())
