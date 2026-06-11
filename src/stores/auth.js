@@ -48,6 +48,74 @@ export const useAuthStore = defineStore('auth', () => {
         }
 
     }
+    // Función para registrar nuevos administradores
+  const registrarUsuario = async (datosNuevoUsuario) => {
+    cargando.value = true;
+    mensajeError.value = '';
+
+    try {
+      // 1. Verificamos si el nombre de usuario ya está en uso
+      const existe = await database.usuarios.get({ nombreusuario: datosNuevoUsuario.usuario });
+      
+      if (existe) {
+        mensajeError.value = 'El nombre de usuario ya existe';
+        return false; // Falló el registro
+      }
+
+      // 2. Si no existe, lo guardamos en Dexie
+      // Mapeamos los datos del formulario a las columnas de la DB
+      await database.usuarios.add({
+        nombreusuario: datosNuevoUsuario.usuario,
+        password: datosNuevoUsuario.password,
+        rol: datosNuevoUsuario.rol,
+        nombre: datosNuevoUsuario.nombre, // Guardamos el nombre real también
+        nivel: null, // Como es Admin, no tiene nivel
+        edad: null   // Ni edad de juego
+      });
+
+      return true; // Registro exitoso
+    } catch (error) {
+      console.error('Error al registrar:', error);
+      mensajeError.value = 'Error al intentar crear la cuenta';
+      return false;
+    } finally {
+      cargando.value = false;
+    }
+  };
+  // Función para que el Admin registre nuevos niños (jugadores)
+  const registrarNino = async (datosNino) => {
+    cargando.value = true;
+    mensajeError.value = '';
+
+    try {
+      // 1. Verificamos si el nombre de usuario (nickname) ya está en uso
+      const existe = await database.usuarios.get({ nombreusuario: datosNino.usuario });
+      
+      if (existe) {
+        mensajeError.value = 'Este nombre de usuario ya está asignado a otro niño.';
+        return false; 
+      }
+
+      // 2. Guardamos el perfil del niño en Dexie
+      await database.usuarios.add({
+        nombreusuario: datosNino.usuario,
+        password: datosNino.password, // Usualmente un PIN corto de 4 dígitos
+        rol: 'child',                 // Rol fijo para jugadores
+        nombre: datosNino.nombre,     // Nombre real del niño
+        edad: datosNino.edad,         // Para estadísticas o reportes
+        nivel: datosNino.nivel,       // Define a qué juegos tiene acceso
+        medallasCount: 0              // Todos los niños inician con 0 medallas
+      });
+
+      return true; // Registro exitoso
+    } catch (error) {
+      console.error('Error al registrar niño:', error);
+      mensajeError.value = 'Error al intentar crear el perfil del jugador.';
+      return false;
+    } finally {
+      cargando.value = false;
+    }
+  };
 
     // Funcion para limpiar los datos al salir (cerrar sesión)
     const cerrarSesion = () => {
@@ -64,6 +132,8 @@ export const useAuthStore = defineStore('auth', () => {
         edadUsuario,
         nivelUsuario,
         iniciarSesion,
+        registrarUsuario,
+        registrarNino,
         cerrarSesion
     };
     
