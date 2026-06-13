@@ -1,79 +1,96 @@
-import {defineStore} from 'pinia'
-import {ref, computed} from 'vue'
-import {database} from '@/database/db'
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { database } from '@/database/db'
 
 export const useAuthStore = defineStore('auth', () => {
 
-    // variables reactivas
-    const usuarioActual = ref(null)
-    const cargando = ref(false)
-    const mensajeError = ref('')
+  const normalizarNombreUsuario = (valor) => String(valor ?? '').trim().toLowerCase()
 
-    //funciones getters (propiedades computadas)
-    const estaAutenticado = computed(() => usuarioActual.value !== null);
+  // variables reactivas
+  const usuarioActual = ref(null)
+  const cargando = ref(false)
+  const mensajeError = ref('')
 
-    const esAdmin = computed(() => usuarioActual.value?.rol === 'admin');
+  // funciones getters (propiedades computadas)
+  const estaAutenticado = computed(() => usuarioActual.value !== null);
+  const esAdmin = computed(() => usuarioActual.value?.rol === 'admin');
+  const edadUsuario = computed(() => usuarioActual.value?.edad ?? null);
+  const nivelUsuario = computed(() => usuarioActual.value?.nivel ?? null);
 
-    const edadUsuario = computed(() => usuarioActual.value?.edad || null);
-
-    const nivelUsuario = computed(() => usuarioActual.value?.nivel || null);
-
-
-
+  // funciones acciones
+  const iniciarSesion = async (nombreusuario, password) => {
+    cargando.value = true;
+    mensajeError.value = '';
+    const nombreUsuarioLimpio = normalizarNombreUsuario(nombreusuario)
     
-    //funciones acciones
-    const iniciarSesion = async (nombreusuario, password) => {
-        cargando.value = true;
-        mensajeError.value = '';
-    
-        try {
-        // Consultamos a Dexie filtrando por el nombre de usuario
-        const usuario = await database.usuarios.get({ nombreusuario: nombreusuario });
+    try {
+      if (!nombreUsuarioLimpio || !password) {
+        mensajeError.value = 'Debes ingresar usuario y contraseña';
+        return false;
+      }
 
-        if (usuario && usuario.password === password) {
-            
-            const { password: _, ...datosUsuario } = usuario;
-            usuarioActual.value = datosUsuario;
-            return true; // Login exitoso
-        } else {
-            mensajeError.value = 'Usuario o contraseña incorrectos';
-            return false; // Login fallido
-        }
-        } catch (error) {
-            console.error('Error al conectar con la base de datos:', error);
-            mensajeError.value = 'Ocurrió un error al intentar iniciar sesión';
-            return false;
-        } finally {
-            cargando.value = false;
-        }
+      const usuario = await database.usuarios.get({ nombreusuario: nombreUsuarioLimpio });
 
+      if (usuario && usuario.password === password) {
+        // Asignación explícita sin desestructuración pesada
+        usuarioActual.value = {
+          id: usuario.id,
+          nombreusuario: usuario.nombreusuario,
+          nombre: usuario.nombre,
+          rol: usuario.rol,
+          edad: usuario.edad,
+          nivel: usuario.nivel
+        };
+        return true;
+      } else {
+        mensajeError.value = 'Usuario o contraseña incorrectos';
+        return false;
+      }
+    } catch (error) {
+      console.error('Error al conectar con la base de datos:', error);
+      mensajeError.value = 'Ocurrió un error al intentar iniciar sesión';
+      return false;
+    } finally {
+      cargando.value = false;
     }
-    // Función para registrar nuevos administradores
+  }
+
+  // Función para registrar nuevos administradores
   const registrarUsuario = async (datosNuevoUsuario) => {
     cargando.value = true;
     mensajeError.value = '';
+    const nombreUsuarioLimpio = normalizarNombreUsuario(datosNuevoUsuario?.usuario)
 
     try {
-      // 1. Verificamos si el nombre de usuario ya está en uso
-      const existe = await database.usuarios.get({ nombreusuario: datosNuevoUsuario.usuario });
+      if (!nombreUsuarioLimpio || !datosNuevoUsuario?.password || !datosNuevoUsuario?.nombre) {
+        mensajeError.value = 'Completa todos los datos del administrador';
+        return false;
+      }
+
+      const totalAdministradores = await database.usuarios.where('rol').equals('admin').count();
+
+      if (totalAdministradores > 0) {
+        mensajeError.value = 'Ya existe un administrador central registrado';
+        return false;
+      }
+
+      const existe = await database.usuarios.get({ nombreusuario: nombreUsuarioLimpio });
       
       if (existe) {
         mensajeError.value = 'El nombre de usuario ya existe';
-        return false; // Falló el registro
+        return false;
       }
 
-      // 2. Si no existe, lo guardamos en Dexie
-      // Mapeamos los datos del formulario a las columnas de la DB
       await database.usuarios.add({
-        nombreusuario: datosNuevoUsuario.usuario,
+        nombreusuario: nombreUsuarioLimpio,
         password: datosNuevoUsuario.password,
-        rol: datosNuevoUsuario.rol,
-        nombre: datosNuevoUsuario.nombre, // Guardamos el nombre real también
-        nivel: null, // Como es Admin, no tiene nivel
-        edad: null   // Ni edad de juego
+        rol: 'admin',
+        nombre: String(datosNuevoUsuario.nombre).trim(),
+        nivel: null,
+        edad: null
       });
 
-      return true; // Registro exitoso
+      return true;
     } catch (error) {
       console.error('Error al registrar:', error);
       mensajeError.value = 'Error al intentar crear la cuenta';
@@ -82,32 +99,37 @@ export const useAuthStore = defineStore('auth', () => {
       cargando.value = false;
     }
   };
-  // Función para que el Admin registre nuevos niños (jugadores)
+
+  // Función para que el Admin registrar nuevos niños (jugadores)
   const registrarNino = async (datosNino) => {
     cargando.value = true;
     mensajeError.value = '';
+    const nombreUsuarioLimpio = normalizarNombreUsuario(datosNino?.usuario)
 
     try {
-      // 1. Verificamos si el nombre de usuario (nickname) ya está en uso
-      const existe = await database.usuarios.get({ nombreusuario: datosNino.usuario });
+      if (!nombreUsuarioLimpio || !datosNino?.password || !datosNino?.nombre) {
+        mensajeError.value = 'Completa todos los datos del niño';
+        return false;
+      }
+
+      const existe = await database.usuarios.get({ nombreusuario: nombreUsuarioLimpio });
       
       if (existe) {
         mensajeError.value = 'Este nombre de usuario ya está asignado a otro niño.';
         return false; 
       }
 
-      // 2. Guardamos el perfil del niño en Dexie
       await database.usuarios.add({
-        nombreusuario: datosNino.usuario,
-        password: datosNino.password, // Usualmente un PIN corto de 4 dígitos
-        rol: 'child',                 // Rol fijo para jugadores
-        nombre: datosNino.nombre,     // Nombre real del niño
-        edad: datosNino.edad,         // Para estadísticas o reportes
-        nivel: datosNino.nivel,       // Define a qué juegos tiene acceso
-        medallasCount: 0              // Todos los niños inician con 0 medallas
+        nombreusuario: nombreUsuarioLimpio,
+        password: datosNino.password,
+        rol: 'child',
+        nombre: String(datosNino.nombre).trim(),
+        edad: Number(datosNino.edad),
+        nivel: Number(datosNino.nivel),
+        medallasCount: 0
       });
 
-      return true; // Registro exitoso
+      return true;
     } catch (error) {
       console.error('Error al registrar niño:', error);
       mensajeError.value = 'Error al intentar crear el perfil del jugador.';
@@ -117,24 +139,23 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-    // Funcion para limpiar los datos al salir (cerrar sesión)
-    const cerrarSesion = () => {
-        usuarioActual.value = null;
-    };
+  // Funcion para limpiar los datos al salir (cerrar sesión)
+  const cerrarSesion = () => {
+    usuarioActual.value = null;
+    mensajeError.value = '';
+  };
 
-    // Retornamos todo lo que necesitamos exponer a los componentes
-    return {
-        usuarioActual,
-        cargando,
-        mensajeError,
-        estaAutenticado,
-        esAdmin,
-        edadUsuario,
-        nivelUsuario,
-        iniciarSesion,
-        registrarUsuario,
-        registrarNino,
-        cerrarSesion
-    };
-    
+  return {
+    usuarioActual,
+    cargando,
+    mensajeError,
+    estaAutenticado,
+    esAdmin,
+    edadUsuario,
+    nivelUsuario,
+    iniciarSesion,
+    registrarUsuario,
+    registrarNino,
+    cerrarSesion
+  };
 });
