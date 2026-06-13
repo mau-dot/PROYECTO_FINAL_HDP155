@@ -46,7 +46,7 @@ const router = createRouter({
     },
 
 
-    //rutas de jugadores (childs) (protegidas por nivel/edad)
+    //rutas de jugadores (child) (protegidas por nivel/edad)
     {
       path : '/juego/nivel-1',
       name : 'level1',
@@ -106,7 +106,7 @@ router.beforeEach((destino) => {
     const nivelUsuarioValido = Number.isInteger(nivelUsuario) && nivelUsuario > 0
 
     if (!nivelUsuarioValido || nivelUsuario !== nivelRequerido) {
-      // Si el niño aún no tiene nivel asignado o intenta entrar a otro, lo enviamos a una ruta segura
+      // Si el child aún no tiene nivel asignado o intenta entrar a otro, lo enviamos a una ruta segura
       return { name: nivelUsuarioValido ? `level${nivelUsuario}` : 'home' }
     }
   }

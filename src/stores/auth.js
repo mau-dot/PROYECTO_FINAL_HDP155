@@ -100,38 +100,38 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-  // Función para que el Admin registrar nuevos niños (jugadores)
-  const registrarNino = async (datosNino) => {
+  // Función para que el Admin registrar nuevos childs (jugadores)
+  const registrarChild = async (datosChild) => {
     cargando.value = true;
     mensajeError.value = '';
-    const nombreUsuarioLimpio = normalizarNombreUsuario(datosNino?.usuario)
+    const nombreUsuarioLimpio = normalizarNombreUsuario(datosChild?.usuario)
 
     try {
-      if (!nombreUsuarioLimpio || !datosNino?.password || !datosNino?.nombre) {
-        mensajeError.value = 'Completa todos los datos del niño';
+      if (!nombreUsuarioLimpio || !datosChild?.password || !datosChild?.nombre) {
+        mensajeError.value = 'Completa todos los datos del child';
         return false;
       }
 
       const existe = await database.usuarios.get({ nombreusuario: nombreUsuarioLimpio });
       
       if (existe) {
-        mensajeError.value = 'Este nombre de usuario ya está asignado a otro niño.';
+        mensajeError.value = 'Este nombre de usuario ya está asignado a otro child.';
         return false; 
       }
 
       await database.usuarios.add({
         nombreusuario: nombreUsuarioLimpio,
-        password: datosNino.password,
+        password: datosChild.password,
         rol: 'child',
-        nombre: String(datosNino.nombre).trim(),
-        edad: Number(datosNino.edad),
-        nivel: Number(datosNino.nivel),
+        nombre: String(datosChild.nombre).trim(),
+        edad: Number(datosChild.edad),
+        nivel: Number(datosChild.nivel),
         medallasCount: 0
       });
 
       return true;
     } catch (error) {
-      console.error('Error al registrar niño:', error);
+      console.error('Error al registrar child:', error);
       mensajeError.value = 'Error al intentar crear el perfil del jugador.';
       return false;
     } finally {
@@ -155,7 +155,7 @@ export const useAuthStore = defineStore('auth', () => {
     nivelUsuario,
     iniciarSesion,
     registrarUsuario,
-    registrarNino,
+    registrarChild,
     cerrarSesion
   };
 });
