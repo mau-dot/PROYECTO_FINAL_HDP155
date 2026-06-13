@@ -13,8 +13,6 @@ import Level1View from '@/views/levels/Level1View.vue'
 import Level2View from '@/views/levels/Level2View.vue'
 import Level3View from '@/views/levels/Level3View.vue'
 import Level4View from '@/views/levels/Level4View.vue'
-
-import RegisterView from '@/views/RegisterView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 
 //configuracion de rutas
@@ -24,7 +22,6 @@ const router = createRouter({
     //rutas publicas
     {path: '/', name: 'home', component:HomeView},
     {path: '/login', name: 'login', component:LoginView},
-    { path: '/register', name: 'register', component: RegisterView },
 
     //ruta de perfil protegida, solo requiere un usuario logeado
     { 
@@ -85,7 +82,7 @@ const router = createRouter({
   
 
 */
-router.beforeEach((destino) =>{
+router.beforeEach((destino) => {
 
   //instancia del store de autenticacion para obtener los datos en tiempo actual del usuario
   const authStore = useAuthStore();
@@ -102,12 +99,18 @@ router.beforeEach((destino) =>{
     return { name: 'home' };
   }
 
- // 3 ¿La ruta pide un nivel específico (niños) y el usuario NO es admin y no coincide su nivel?
-  if (!authStore.esAdmin && destino.meta.nivelRequerido && authStore.nivelUsuario !== destino.meta.nivelRequerido) {
-    // Si un niño de nivel 1 intenta entrar al nivel 4, lo obligamos a ir a SU nivel
-    return { name: `level${authStore.nivelUsuario}` }; 
-  }
+  // 3 ¿La ruta pide un nivel específico y el usuario no coincide con ese nivel?
+  if (!authStore.esAdmin && destino.meta.nivelRequerido) {
+    const nivelUsuario = Number(authStore.nivelUsuario)
+    const nivelRequerido = Number(destino.meta.nivelRequerido)
+    const nivelUsuarioValido = Number.isInteger(nivelUsuario) && nivelUsuario > 0
 
+    if (!nivelUsuarioValido || nivelUsuario !== nivelRequerido) {
+      // Si el niño aún no tiene nivel asignado o intenta entrar a otro, lo enviamos a una ruta segura
+      return { name: nivelUsuarioValido ? `level${nivelUsuario}` : 'home' }
+    }
+  }
+  return true
 });
 
 
