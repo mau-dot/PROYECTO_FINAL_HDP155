@@ -86,8 +86,7 @@ export const useAuthStore = defineStore('auth', () => {
         password: datosNuevoUsuario.password,
         rol: 'admin',
         nombre: String(datosNuevoUsuario.nombre).trim(),
-        nivel: null,
-        edad: null
+        fechaRegistro: new Date().toISOString()
       });
 
       return true;

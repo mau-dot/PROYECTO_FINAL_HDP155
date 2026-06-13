@@ -40,9 +40,6 @@ database.on('populate', async () => {
     nombre: 'Administrador General',
     password: '123', // Para fines académicos y de prueba inicial
     rol: 'admin',
-    edad: null,
-    nivel: null,
-    apellido: '',
     fechaRegistro: new Date().toISOString()
   });
 
