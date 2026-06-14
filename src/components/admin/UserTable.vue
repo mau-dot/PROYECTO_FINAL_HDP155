@@ -1,5 +1,6 @@
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+// Removida la importación manual de defineProps y defineEmits. 
+// En Vue 3 con <script setup>, son macros globales automáticas.
 
 defineProps({
   // Array de estudiantes que pasará la vista padre
@@ -47,13 +48,13 @@ const emit = defineEmits(['verProgreso', 'eliminarUsuario'])
                   <div 
                     class="progress-bar bg-info" 
                     role="progressbar" 
-                    :style="{ width: user.progreso + '%' }"
-                    :aria-valuenow="user.progreso"
+                    :style="{ width: (user.progreso || 0) + '%' }"
+                    :aria-valuenow="user.progreso || 0"
                     aria-valuemin="0"
                     aria-valuemax="100"
                   ></div>
                 </div>
-                <span class="fw-bold small text-muted">{{ user.progreso }}%</span>
+                <span class="fw-bold small text-muted">{{ user.progreso || 0 }}%</span>
               </div>
             </td>
             <td class="text-end pe-4">

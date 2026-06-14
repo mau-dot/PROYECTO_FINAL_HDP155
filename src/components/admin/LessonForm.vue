@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, defineProps, defineEmits } from 'vue'
+import { ref, watch } from 'vue'
 
 const props = defineProps({
   // Si desde el panel padre se le pasa una lección, entra en modo edición
@@ -20,8 +20,9 @@ const descripcion = ref('')
 watch(() => props.leccionToEdit, (newVal) => {
   if (newVal) {
     titulo.value = newVal.titulo
-    nivel.value = newVal.nivel
-    descripcion.value = newVal.descripcion
+    nivel.value = String(newVal.nivel)
+    // Tolerancia híbrida para leer tanto de contenido (Dexie) como de descripcion
+    descripcion.value = newVal.contenido || newVal.descripcion || ''
   } else {
     limpiarFormulario()
   }
@@ -30,10 +31,18 @@ watch(() => props.leccionToEdit, (newVal) => {
 const enviarFormulario = () => {
   const datosLeccion = {
     titulo: titulo.value,
-    nivel: nivel.value,
-    descripcion: descripcion.value
+    nivel: Number(nivel.value),
+    // Sincronizamos con el esquema '++id, nivel, titulo, tipo, contenido' de tu db.js
+    contenido: descripcion.value, 
+    tipo: 'Card' // Valor por defecto requerido en tu esquema de base de datos
   }
-  // Enviamos los datos procesados a la vista padre para el guardado en base de datos o store
+  
+  // Si estamos editando una lección existente, le preservamos su ID único de Dexie
+  if (props.leccionToEdit && props.leccionToEdit.id) {
+    datosLeccion.id = props.leccionToEdit.id
+  }
+
+  // Enviamos los datos procesados a la vista madre (ManagementView) para el guardado
   emit('guardarLeccion', datosLeccion)
   limpiarFormulario()
 }
@@ -88,7 +97,7 @@ const limpiarFormulario = () => {
 
         <div class="d-flex justify-content-end gap-2 mt-4">
           <button type="button" @click="limpiarFormulario" class="btn btn-outline-secondary px-4">
-            Limpiar
+            Limpiar / Cancelar
           </button>
           <button type="submit" class="btn btn-dark px-4">
             {{ leccionToEdit ? 'Actualizar Cambios' : 'Guardar Lección' }}
