@@ -232,30 +232,6 @@ const niveles = [
   },
 ]
 
-const beneficios = [
-  {
-    label: 'A',
-    titulo: 'Aprendizaje claro',
-    descripcion:
-      'Contenido corto, directo y pensado para que niños y padres entiendan el progreso con facilidad.',
-    iconClass: 'bg-primary-subtle text-primary',
-  },
-  {
-    label: 'B',
-    titulo: 'Niveles por edad',
-    descripcion:
-      'Cada niño entra al nivel que le corresponde para evitar frustración y mantener la motivación.',
-    iconClass: 'bg-success-subtle text-success',
-  },
-  {
-    label: 'C',
-    titulo: 'Diseño amigable',
-    descripcion:
-      'Colores suaves, botones grandes y una navegación simple para una experiencia segura y agradable.',
-    iconClass: 'bg-warning-subtle text-warning',
-  },
-]
-
 const nivelVisible = computed(() => {
   if (!authStore.estaAutenticado) {
     return 'Invitado'
@@ -370,16 +346,38 @@ const irALevel = (rutaNivel) => {
     router.push({ name: `level${nivelUsuario}` })
   }
 }
-
-const verDetalleNivel = (rutaNivel) => {
-  irALevel(rutaNivel)
-}
 </script>
 
 <style scoped>
 .home-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 38%, #fff8ef 100%);
+  background: linear-gradient(135deg, #e0f2fe 0%, #e0e7ff 50%, #f3e8ff 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.home-page::before, .home-page::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  z-index: 0;
+  pointer-events: none; /* No estorban si el niño hace clic */
+}
+
+.home-page::before {
+  top: -10%;
+  right: -5%;
+  width: 400px;
+  height: 400px;
+  background: rgba(255, 193, 7, 0.18);
+}
+
+.home-page::after {
+  bottom: 5%;
+  left: -10%;
+  width: 500px;
+  height: 500px;
+  background: rgba(244, 63, 94, 0.12);
 }
 
 .hero-section {
