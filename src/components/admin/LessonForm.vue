@@ -16,6 +16,13 @@ const titulo = ref('')
 const nivel = ref('1')
 const descripcion = ref('')
 
+// Función para limpiar el formulario (definida ANTES del watch que la usa)
+const limpiarFormulario = () => {
+  titulo.value = ''
+  nivel.value = '1'
+  descripcion.value = ''
+}
+
 // Observador inteligente: Si cambia la lección a editar, rellena el formulario de inmediato
 watch(() => props.leccionToEdit, (newVal) => {
   if (newVal) {
@@ -45,12 +52,6 @@ const enviarFormulario = () => {
   // Enviamos los datos procesados a la vista madre (ManagementView) para el guardado
   emit('guardarLeccion', datosLeccion)
   limpiarFormulario()
-}
-
-const limpiarFormulario = () => {
-  titulo.value = ''
-  nivel.value = '1'
-  descripcion.value = ''
 }
 </script>
 
