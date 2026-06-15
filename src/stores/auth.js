@@ -13,6 +13,11 @@ export const useAuthStore = defineStore('auth', () => {
   const cargando = ref(false)
   const mensajeError = ref('')
 
+  const sesionGuardada = localStorage.getItem("hdp_sesion")
+  if (sesionGuardada) {
+    usuarioActual.value = JSON.parse(sesionGuardada)
+  }
+  
   // funciones getters (propiedades computadas)
   const estaAutenticado = computed(() => usuarioActual.value !== null)
   const esAdmin = computed(() => usuarioActual.value?.rol === 'admin')
@@ -44,6 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
           edad: usuario.edad,
           nivel: usuario.nivel,
         }
+        localStorage.setItem("hdp_sesion", JSON.stringify(usuarioActual.value))
         return true
       } else {
         mensajeError.value = 'Usuario o contraseña incorrectos'
@@ -60,9 +66,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Funcion para limpiar los datos al salir (cerrar sesión)
   const cerrarSesion = () => {
+
     usuarioActual.value = null
     mensajeError.value = ''
     cargando.value = false // Asegura que la app no se quede congelada procesando
+    localStorage.removeItem("hdp_sesion")
   }
 
   return {
