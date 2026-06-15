@@ -1,5 +1,6 @@
 <template>
-  <div class="container py-4">
+  <Navbar/>
+  <div class="container py-4 pt-5 mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4 bg-dark text-white p-4 rounded shadow-lg">
       <div>
         <h1 class="h3 mb-1">🛠️ Panel de Administración</h1>
@@ -52,12 +53,15 @@
     </div>
 
   </div>
+   <Footer/>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { database } from '@/database/db' // Tu db.js de Dexie
 import UserTable from '@/components/admin/UserTable.vue'
+import Navbar from '@/components/common/Navbar.vue'
+import Footer from '@/components/common/Footer.vue'
 
 const listaAlumnosRaw = ref([])
 

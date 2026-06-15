@@ -8,8 +8,8 @@
         <p class="text-muted">Ingresa tus datos para continuar</p>
       </div>
 
-      <div v-if="errorLogin" class="alert alert-danger text-center" role="alert">
-        Credenciales incorrectas. Inténtalo de nuevo.
+      <div v-if="authStore.mensajeError" class="alert alert-danger text-center" role="alert">
+        {{ authStore.mensajeError }}
       </div>
 
       <form @submit.prevent="procesarLogin">
@@ -38,15 +38,16 @@
           />
         </div>
 
-        <button type="submit" class="btn btn-primary w-100 fw-bold">
-          Ingresar
+        <button type="submit" class="btn btn-primary w-100 fw-bold" :disabled="authStore.cargando">
+          {{ useAuthStore.cargando ? 'Ingresando...' : 'Ingresar' }}
         </button>
 
-        <div class="text-center mt-3">
+        <!--Esto sera privado-->
+        <!-- <div class="text-center mt-3">
           <router-link to="/register" class="text-decoration-none text-primary fw-bold">
             ¿Eres profesor/padre? Regístrate aquí
           </router-link>
-        </div>
+        </div> -->
 
       </form>
     </div>
@@ -63,10 +64,10 @@ const authStore = useAuthStore();
 
 const usuario = ref('');
 const password = ref('');
-const errorLogin = ref(false);
+
 
 const procesarLogin = async () => {
-  errorLogin.value = false;
+  
 
   // Se envían los datos ingresados al store para que los busque y compare en IndexedDB
   const exito = await authStore.iniciarSesion(usuario.value, password.value);
@@ -78,7 +79,7 @@ const procesarLogin = async () => {
       router.push({ name: `level${authStore.nivelUsuario}` });
     }
   } else {
-    errorLogin.value = true;
+    
     password.value = '';
   }
 };

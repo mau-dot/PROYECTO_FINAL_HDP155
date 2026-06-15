@@ -1,5 +1,18 @@
 <script setup>
 import { ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router' 
+import { useAuthStore } from '@/stores/auth'
+
+
+const authStore = useAuthStore();
+const router = useRouter();
+
+//funcion de serrar sesion 
+const cerrarSesion = ()=>{
+
+  authStore.cerrarSesion();
+  router.push({name : 'login'});  
+};
 
 // Simulación local del tema que luego conectarás a Pinia
 const modoOscuro = ref(false)
@@ -11,11 +24,11 @@ const toggleTema = () => {
 </script>
 
 <template>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow px-3">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow px-3 fixed-top">
     <div class="container-fluid">
-      <a class="navbar-brand d-flex align-items-center fw-bold text-warning fs-3" href="#">
+      <RouterLink class="navbar-brand d-flex align-items-center fw-bold text-warning fs-3" href="#">
         🎈 <span class="ms-2 text-white">HDP Learn</span>
-      </a>
+      </RouterLink>
 
       <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContenido">
         <span class="navbar-toggler-icon"></span>
@@ -24,10 +37,23 @@ const toggleTema = () => {
       <div class="collapse navbar-collapse" id="navbarContenido">
         <ul class="navbar-nav ms-auto align-items-center gap-2 mt-2 mt-lg-0">
           <li class="nav-item">
-            <a class="nav-link text-white fw-bold px-3" href="#">Inicio</a>
+            <RouterLink to="/" class="nav-link text-white fw-bold px-3" href="#">Inicio</RouterLink>
           </li>
-          <li class="nav-item">
-            <a class="nav-link text-white fw-bold px-3" href="#">Mis Juegos</a>
+          <li class="nav-item" v-if="authStore.esChild">
+            <RouterLink to="/juego/nivel-1" class="nav-link text-white fw-bold px-3" href="#">Mis Juegos</RouterLink>
+          </li>
+
+          <!--Mostrando usuario logeado, solo si esta autenticado-->
+          <li v-if="authStore.estaAutenticado" class="nav-item">
+            <span class="text-white fw-bold px-3" >
+              👤 {{ authStore.usuarioActual?.nombre || authStore.usuarioActual?.nombreusuario }}
+            </span>
+          </li>
+          <!--Boton de cierre de sesion-->
+          <li v-if="authStore.estaAutenticado" class="nav-item">
+            <button @click="cerrarSesion" class="btn btn-outline-light btn-sm fw-bold">
+              Cerrar sesion
+            </button>
           </li>
 
           <li class="nav-item ms-lg-3">

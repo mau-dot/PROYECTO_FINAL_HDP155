@@ -1,5 +1,6 @@
 <template>
-  <div class="container py-4">
+  <Navbar/>
+  <div class="container py-4 pt-5 mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4 bg-secondary text-white p-4 rounded shadow-lg">
       <div>
         <h1 class="h3 mb-1">📚 Gestión del Contenido Educativo</h1>
@@ -76,13 +77,15 @@
       </div>
     </div>
   </div>
+  <Footer/>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { database } from '@/database/db' // Ruta exacta verificada
 import LessonForm from '@/components/admin/LessonForm.vue'
-
+import Navbar from '@/components/common/Navbar.vue'
+import Footer from '@/components/common/Footer.vue'
 const listaLecciones = ref([])
 const leccionSeleccionada = ref(null)
 

@@ -16,6 +16,7 @@ export const useAuthStore = defineStore('auth', () => {
   // funciones getters (propiedades computadas)
   const estaAutenticado = computed(() => usuarioActual.value !== null)
   const esAdmin = computed(() => usuarioActual.value?.rol === 'admin')
+  const esChild = computed(()=> usuarioActual.value?.rol === 'child')
   const edadUsuario = computed(() => usuarioActual.value?.edad ?? null)
   const nivelUsuario = computed(() => usuarioActual.value?.nivel ?? null)
 
@@ -57,7 +58,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // Función para registrar nuevos administradores
+  // Función para registrar nuevos administradores(posible eliminacion)
   const registrarUsuario = async (datosNuevoUsuario) => {
     cargando.value = true
     mensajeError.value = ''
@@ -153,6 +154,7 @@ export const useAuthStore = defineStore('auth', () => {
     mensajeError,
     estaAutenticado,
     esAdmin,
+    esChild,
     edadUsuario,
     nivelUsuario,
     iniciarSesion,
