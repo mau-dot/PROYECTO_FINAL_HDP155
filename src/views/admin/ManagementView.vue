@@ -23,6 +23,7 @@
     <div class="row g-4">
       <div class="col-12 col-lg-5">
         <LessonForm 
+          :key="formKey"
           :leccionToEdit="leccionSeleccionada" 
           :cargando="leccionesStore.cargando"
           @guardarLeccion="manejarGuardarLeccion"
@@ -150,6 +151,7 @@ const seleccionarParaEditar = (leccion) => {
 
 const limpiarEdicion = () => {
   leccionSeleccionada.value = null
+  formKey.value++ // Forzamos limpieza si cancelan manualmente
 }
 
 const manejarGuardarLeccion = async (datosLeccion) => {
