@@ -138,19 +138,18 @@ import { ref, watch } from 'vue'
 
 const props = defineProps({
   leccionToEdit: Object,
-  cargando: Boolean
+  cargando: Boolean,
+  resetSignal: Number // 🆕 Señal de reset desde el padre
 })
 
 const emit = defineEmits(['guardarLeccion', 'cancelar'])
 
-// Variables Base
 const errorFormulario = ref('')
 const titulo = ref('')
 const nivel = ref('1')
 const descripcion = ref('')
 const tipo = ref('opcion_multiple')
 
-// Plantillas según el tipo de juego
 const plantillas = {
   opcion_multiple: () => ({ pregunta: '', opciones: ['', '', ''], respuestaCorrecta: '', imagen: null }),
   completar_oracion: () => ({ oracion: '', palabraCorrecta: '', distractor: '' }),
@@ -159,7 +158,6 @@ const plantillas = {
 
 const preguntas = ref([ plantillas.opcion_multiple() ])
 
-// Cambiar de tipo resetea los ejercicios a la estructura correcta
 const cambiarTipoLeccion = () => {
   preguntas.value = [ plantillas[tipo.value]() ]
 }
@@ -172,14 +170,13 @@ const eliminarEjercicio = (index) => {
   preguntas.value.splice(index, 1)
 }
 
-// ==== Funciones específicas para Opción Múltiple ====
 const agregarOpcion = (qIndex) => {
   preguntas.value[qIndex].opciones.push('')
 }
 
 const quitarOpcion = (qIndex, oIndex) => {
   preguntas.value[qIndex].opciones.splice(oIndex, 1)
-  preguntas.value[qIndex].respuestaCorrecta = '' // Resetear correcta por seguridad
+  preguntas.value[qIndex].respuestaCorrecta = ''
 }
 
 const procesarImagen = (event, index) => {
@@ -224,17 +221,21 @@ watch(() => props.leccionToEdit, (newVal) => {
   }
 }, { immediate: true })
 
+// 🆕 Cuando el padre incrementa resetSignal, limpia el formulario
+watch(() => props.resetSignal, () => {
+  limpiarFormulario()
+})
+
 const enviarFormulario = () => {
   errorFormulario.value = ''
 
-  // Validación rápida local para UX antes de enviarlo al Store
   if (tipo.value === 'opcion_multiple') {
     for (let p of preguntas.value) {
       const limpias = p.opciones.filter(o => o.trim() !== '')
       const unicas = new Set(limpias)
       if (unicas.size !== limpias.length) {
         errorFormulario.value = '¡Cuidado! Tienes opciones de respuesta repetidas en un ejercicio.'
-        return // Bloquea el envío
+        return
       }
     }
   }
@@ -243,7 +244,7 @@ const enviarFormulario = () => {
     titulo: titulo.value,
     nivel: Number(nivel.value),
     descripcion: descripcion.value,
-    tipo: tipo.value, // Enviamos el tipo seleccionado
+    tipo: tipo.value,
     contenido: JSON.parse(JSON.stringify(preguntas.value)) 
   }
 

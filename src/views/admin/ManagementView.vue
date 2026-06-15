@@ -23,9 +23,9 @@
     <div class="row g-4">
       <div class="col-12 col-lg-5">
         <LessonForm 
-          :key="formKey"
           :leccionToEdit="leccionSeleccionada" 
           :cargando="leccionesStore.cargando"
+          :resetSignal="resetFormulario"
           @guardarLeccion="manejarGuardarLeccion"
           @cancelar="limpiarEdicion"
         />
@@ -135,27 +135,25 @@ import Footer from '@/components/common/Footer.vue'
 
 const leccionesStore = useLeccionesStore()
 const leccionSeleccionada = ref(null)
+const resetFormulario = ref(0) // 🆕 Señal de reset: cada vez que sube en 1, LessonForm la detecta y limpia
 
 const mostrarModalEliminar = ref(false)
 const idAEliminar = ref(null)
 
 onMounted(async () => {
-  // Carga inicial sincronizada desde Pinia
   await leccionesStore.cargarLecciones()
 })
 
 const seleccionarParaEditar = (leccion) => {
-  // Clonación profunda del objeto para evitar la mutación directa en la tabla mientras se escribe
   leccionSeleccionada.value = JSON.parse(JSON.stringify(leccion))
 }
 
 const limpiarEdicion = () => {
   leccionSeleccionada.value = null
-  formKey.value++ // Forzamos limpieza si cancelan manualmente
+  resetFormulario.value++ // 🆕 Incrementar dispara el watch en LessonForm
 }
 
 const manejarGuardarLeccion = async (datosLeccion) => {
-  // El store valida y decide internamente si hace un .add() o un .update() en Dexie
   const exito = await leccionesStore.guardarLeccion(datosLeccion)
   if (exito) {
     limpiarEdicion()
