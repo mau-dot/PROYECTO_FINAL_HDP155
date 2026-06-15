@@ -6,128 +6,166 @@
       <section class="hero-section py-5 py-lg-6">
         <div class="container position-relative">
           <div class="row align-items-center g-4 g-lg-5">
-            <div class="col-lg-6 text-center text-lg-start">
-              <span class="badge rounded-pill bg-warning text-dark fw-bold px-3 py-2 mb-3"
-                >EduKids</span
-              >
-
-              <h1 class="display-4 fw-bold text-primary-emphasis mb-3">
-                Aprender jugando nunca fue tan divertido.
-              </h1>
-
-              <p class="lead text-secondary mb-4">
-                Una aventura educativa para niños con retos, colores, formas y hábitos adaptados a
-                cada edad.
-              </p>
-
+            <div v-if="authStore.estaAutenticado && !authStore.esAdmin" class="col-12">
               <div
-                class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start align-items-center"
+                class="kid-space-panel text-center p-4 p-md-5 rounded-5 shadow border border-white position-relative"
               >
-                <BaseButton
-                  texto="Empezar a jugar"
-                  color="warning"
-                  emoji="🚀"
-                  size="lg"
-                  @click="empezarJugar"
-                />
+                <div class="kid-stars-decor">✨</div>
 
-                <BaseButton
-                  texto="Ir al login"
-                  color="primary"
-                  emoji="🔐"
-                  size="lg"
-                  @click="irALogin"
-                />
+                <div class="avatar-container mb-3">
+                  <span class="giant-avatar">🦁</span>
+                </div>
 
-                <BaseButton
-                  v-if="authStore.estaAutenticado && !authStore.esAdmin"
-                  texto="Ir a mi nivel"
-                  color="success"
-                  emoji="🎮"
-                  size="lg"
-                  @click="irAMiNivel"
-                />
+                <h1 class="kid-title mb-3">
+                  ¡Hola, {{ authStore.usuarioActual?.nombre ?? 'Súper Explorador' }}!
+                </h1>
 
-                <BaseButton
-                  v-if="authStore.esAdmin"
-                  texto="Ir al panel admin"
-                  color="dark"
-                  emoji="🛠️"
-                  size="lg"
-                  @click="irAlDashboard"
-                />
-              </div>
+                <p class="kid-lead mb-4">
+                  ¡Tu próxima aventura está lista! ¿Qué mundo vamos a descubrir hoy? 🌟
+                </p>
 
-              <div class="mt-3 small text-secondary">
-                <strong>{{ saludoHero }}</strong>
+                <div class="d-flex flex-wrap gap-5 justify-content-center align-items-center">
+                  <BaseButton
+                    texto="¡Entrar a mi mundo de juegos!"
+                    color="success"
+                    emoji="🎮"
+                    size="lg"
+                    class="pulse-button btn-kid-size"
+                    @click="irAMiNivel"
+                  />
+
+                  <BaseButton
+                    texto="Ver otros niveles"
+                    color="warning"
+                    emoji="🚀"
+                    size="lg"
+                    class="btn-kid-size"
+                    @click="empezarJugar"
+                  />
+                </div>
               </div>
             </div>
 
-            <div class="col-lg-6">
-              <div class="hero-panel card border-0 shadow-lg">
-                <div class="card-body p-4 p-md-5">
-                  <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                      <p class="text-uppercase text-muted fw-semibold mb-1">Ruta de aprendizaje</p>
-                      <h2 class="h4 fw-bold mb-0">Cuatro niveles, cuatro etapas</h2>
-                    </div>
-                    <span class="badge bg-success rounded-pill px-3 py-2">Listo para jugar</span>
-                  </div>
+            <template v-else>
+              <div class="col-lg-6 text-center text-lg-start">
+                <span class="badge rounded-pill bg-warning text-dark fw-bold px-3 py-2 mb-3"
+                  >EduKids</span
+                >
+                <h1 class="display-4 fw-bold text-primary-emphasis mb-3">
+                  Aprender jugando nunca fue tan divertido.
+                </h1>
+                <p class="lead text-secondary mb-4">
+                  Una aventura educativa para niños con retos, colores, formas y hábitos adaptados a
+                  cada edad.
+                </p>
 
-                  <div class="row g-3">
-                    <div class="col-6">
-                      <div
-                        class="p-3 rounded-4 bg-warning-subtle border border-warning-subtle h-100"
-                      >
-                        <div class="fw-bold text-dark">Colores y hábitos</div>
-                        <div class="small text-secondary">
-                          Aprende los colores y rutinas diarias 🧼
-                        </div>
-                      </div>
-                    </div>
+                <div
+                  class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start align-items-center"
+                >
+                  <BaseButton
+                    texto="Empezar a jugar"
+                    color="warning"
+                    emoji="🚀"
+                    size="lg"
+                    @click="empezarJugar"
+                  />
 
-                    <div class="col-6">
-                      <div class="p-3 rounded-4 bg-info-subtle border border-info-subtle h-100">
-                        <div class="fw-bold text-dark">Letras y números</div>
-                        <div class="small text-secondary">
-                          Descubre el abecedario y cuenta hasta 10 🔢
-                        </div>
-                      </div>
-                    </div>
+                  <BaseButton
+                    v-if="!authStore.estaAutenticado"
+                    texto="Ir al login"
+                    color="primary"
+                    emoji="🔐"
+                    size="lg"
+                    @click="irALogin"
+                  />
 
-                    <div class="col-6">
-                      <div
-                        class="p-3 rounded-4 bg-success-subtle border border-success-subtle h-100"
-                      >
-                        <div class="fw-bold text-dark">Palabras y sumas</div>
-                        <div class="small text-secondary">
-                          Forma tus primeras palabras y sumas sencillas ⭐
-                        </div>
-                      </div>
-                    </div>
+                  <BaseButton
+                    v-if="authStore.esAdmin"
+                    texto="Ir al panel admin"
+                    color="dark"
+                    emoji="🛠️"
+                    size="lg"
+                    @click="irAlDashboard"
+                  />
+                </div>
 
-                    <div class="col-6">
-                      <div class="p-3 rounded-4 bg-danger-subtle border border-danger-subtle h-100">
-                        <div class="fw-bold text-dark">Cuentos y lectura</div>
-                        <div class="small text-secondary">
-                          Practica lectura comprensiva y vocabulario 📚
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                <div class="mt-3 small text-secondary">
+                  <strong>{{ saludoHero }}</strong>
+                </div>
+              </div>
 
-                  <div class="mt-4 p-3 rounded-4 bg-white border shadow-sm">
-                    <div class="d-flex align-items-center justify-content-between">
+              <div class="col-lg-6">
+                <div class="hero-panel card border-0 shadow-lg">
+                  <div class="card-body p-4 p-md-5">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
                       <div>
-                        <p class="text-muted mb-1 small">Descubre los juegos preparados para ti</p>
-                        <p class="fw-bold mb-0">{{ mensajeProgreso }}</p>
+                        <p class="text-uppercase text-muted fw-semibold mb-1">
+                          Ruta de aprendizaje
+                        </p>
+                        <h2 class="h4 fw-bold mb-0">Cuatro niveles, cuatro etapas</h2>
                       </div>
-                      <span class="level-chip">{{ nivelVisible }}</span>
+                      <span class="badge bg-success rounded-pill px-3 py-2">Listo para jugar</span>
+                    </div>
+
+                    <div class="row g-3">
+                      <div class="col-6">
+                        <div
+                          class="p-3 rounded-4 bg-warning-subtle border border-warning-subtle h-100"
+                        >
+                          <div class="fw-bold text-dark">Colores y hábitos</div>
+                          <div class="small text-secondary">
+                            Aprende los colores y rutinas diarias 🧼
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="col-6">
+                        <div class="p-3 rounded-4 bg-info-subtle border border-info-subtle h-100">
+                          <div class="fw-bold text-dark">Letras y números</div>
+                          <div class="small text-secondary">
+                            Descubre el abecedario y cuenta hasta 10 🔢
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="col-6">
+                        <div
+                          class="p-3 rounded-4 bg-success-subtle border border-success-subtle h-100"
+                        >
+                          <div class="fw-bold text-dark">Palabras y sumas</div>
+                          <div class="small text-secondary">
+                            Forma tus primeras palabras y sumas sencillas ⭐
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="col-6">
+                        <div
+                          class="p-3 rounded-4 bg-danger-subtle border border-danger-subtle h-100"
+                        >
+                          <div class="fw-bold text-dark">Cuentos y lectura</div>
+                          <div class="small text-secondary">
+                            Practica lectura comprensiva y vocabulario 📚
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="mt-4 p-3 rounded-4 bg-white border shadow-sm">
+                      <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                          <p class="text-muted mb-1 small">
+                            Descubre los juegos preparados para ti
+                          </p>
+                          <p class="fw-bold mb-0">{{ mensajeProgreso }}</p>
+                        </div>
+                        <span class="level-chip">{{ nivelVisible }}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </template>
           </div>
         </div>
       </section>
@@ -348,6 +386,7 @@ const irALevel = (rutaNivel) => {
   } else {
     router.push({ name: `level${nivelUsuario}` })
   }
+
 }
 </script>
 
@@ -359,7 +398,8 @@ const irALevel = (rutaNivel) => {
   overflow: hidden;
 }
 
-.home-page::before, .home-page::after {
+.home-page::before,
+.home-page::after {
   content: '';
   position: absolute;
   border-radius: 50%;
@@ -444,6 +484,111 @@ const irALevel = (rutaNivel) => {
 .py-lg-6 {
   padding-top: 5rem;
   padding-bottom: 5rem;
+}
+
+/* Burbuja */
+.kid-space-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 246, 255, 0.9) 100%);
+  backdrop-filter: blur(12px);
+  border-width: 4px !important;
+  border-style: solid !important;
+  border-color: #ffffff !important;
+  border-radius: 2.5rem !important;
+}
+
+/* Tipografía */
+.kid-title {
+  font-weight: 900;
+  color: #0d6efd;
+  font-size: 2.8rem;
+  text-shadow: 2px 2px 0px rgba(255, 193, 7, 0.3);
+}
+
+/* Subtexto claro y grande */
+.kid-lead {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.avatar-container {
+  display: inline-block;
+}
+
+/* León */
+.giant-avatar {
+  display: inline-block;
+  font-size: 4.5rem;
+  animation: kidJump 2s ease-in-out infinite;
+}
+
+/* Animación en el botón principal */
+.pulse-button {
+  animation: buttonPulse 2s infinite;
+}
+
+/* Botones escalados */
+.btn-kid-size {
+  transform: scale(1.05);
+  font-weight: 800 !important;
+}
+
+/* Estrella de decoración */
+.kid-stars-decor {
+  position: absolute;
+  top: 15px;
+  right: 30px;
+  font-size: 2rem;
+  animation: spinStar 4s linear infinite;
+}
+
+.btn-kid-size:hover {
+  transform: scale(1.12) rotate(-2deg); /* Se estira más y se inclina al revés */
+  filter: brightness(1.1); /* Brilla un poquito más */
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Efecto de el leon cuando se pasa el mouse */
+.kid-space-panel:hover .giant-avatar {
+  animation: kidJump 0.8s ease-in-out infinite;
+}
+
+/* Animación */
+@keyframes kidJump {
+  0%,
+  100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+  30% {
+    transform: translateY(-15px) scale(1.05) rotate(5deg);
+  }
+  60% {
+    transform: translateY(0) scale(0.95) rotate(-5deg);
+  }
+}
+
+@keyframes buttonPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(25, 135, 84, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(25, 135, 84, 0);
+  }
+}
+
+@keyframes spinStar {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.2);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
 }
 
 @media (max-width: 991.98px) {
