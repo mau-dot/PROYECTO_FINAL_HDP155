@@ -16,6 +16,7 @@ export const useAuthStore = defineStore('auth', () => {
   // funciones getters (propiedades computadas)
   const estaAutenticado = computed(() => usuarioActual.value !== null)
   const esAdmin = computed(() => usuarioActual.value?.rol === 'admin')
+  const esChild = computed(()=> usuarioActual.value?.rol === 'child')
   const edadUsuario = computed(() => usuarioActual.value?.edad ?? null)
   const nivelUsuario = computed(() => usuarioActual.value?.nivel ?? null)
 
@@ -57,89 +58,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // Función para registrar nuevos administradores
-  const registrarUsuario = async (datosNuevoUsuario) => {
-    cargando.value = true
-    mensajeError.value = ''
-    const nombreUsuarioLimpio = normalizarNombreUsuario(datosNuevoUsuario?.usuario)
-
-    try {
-      if (!nombreUsuarioLimpio || !datosNuevoUsuario?.password || !datosNuevoUsuario?.nombre) {
-        mensajeError.value = 'Completa todos los datos del administrador'
-        return false
-      }
-
-      const totalAdministradores = await database.usuarios.where('rol').equals('admin').count()
-
-      if (totalAdministradores > 0) {
-        mensajeError.value = 'Ya existe un administrador central registrado'
-        return false
-      }
-
-      const existe = await database.usuarios.get({ nombreusuario: nombreUsuarioLimpio })
-
-      if (existe) {
-        mensajeError.value = 'El nombre de usuario ya existe'
-        return false
-      }
-
-      await database.usuarios.add({
-        nombreusuario: nombreUsuarioLimpio,
-        password: datosNuevoUsuario.password,
-        rol: 'admin',
-        nombre: String(datosNuevoUsuario.nombre).trim(),
-        fechaRegistro: new Date().toISOString(),
-      })
-
-      return true
-    } catch (error) {
-      console.error('Error al registrar:', error)
-      mensajeError.value = 'Error al intentar crear la cuenta'
-      return false
-    } finally {
-      cargando.value = false
-    }
-  }
-
-  // Función para que el Admin registrar nuevos childs (jugadores)
-  const registrarChild = async (datosChild) => {
-    cargando.value = true
-    mensajeError.value = ''
-    const nombreUsuarioLimpio = normalizarNombreUsuario(datosChild?.usuario)
-
-    try {
-      if (!nombreUsuarioLimpio || !datosChild?.password || !datosChild?.nombre) {
-        mensajeError.value = 'Completa todos los datos del child'
-        return false
-      }
-
-      const existe = await database.usuarios.get({ nombreusuario: nombreUsuarioLimpio })
-
-      if (existe) {
-        mensajeError.value = 'Este nombre de usuario ya está asignado a otro child.'
-        return false
-      }
-
-      await database.usuarios.add({
-        nombreusuario: nombreUsuarioLimpio,
-        password: datosChild.password,
-        rol: 'child',
-        nombre: String(datosChild.nombre).trim(),
-        edad: Number(datosChild.edad),
-        nivel: Number(datosChild.nivel),
-        medallasCount: 0,
-      })
-
-      return true
-    } catch (error) {
-      console.error('Error al registrar child:', error)
-      mensajeError.value = 'Error al intentar crear el perfil del jugador.'
-      return false
-    } finally {
-      cargando.value = false
-    }
-  }
-
   // Funcion para limpiar los datos al salir (cerrar sesión)
   const cerrarSesion = () => {
     usuarioActual.value = null
@@ -153,11 +71,10 @@ export const useAuthStore = defineStore('auth', () => {
     mensajeError,
     estaAutenticado,
     esAdmin,
+    esChild,
     edadUsuario,
     nivelUsuario,
     iniciarSesion,
-    registrarUsuario,
-    registrarChild,
     cerrarSesion,
   }
 })

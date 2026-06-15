@@ -193,6 +193,7 @@ import Footer from '@/components/common/Footer.vue'
 const router = useRouter()
 const authStore = useAuthStore()
 
+//arary meramente para ilustracion, localmente
 const niveles = [
   {
     id: 1,
@@ -232,6 +233,7 @@ const niveles = [
   },
 ]
 
+//metodos computados, cambia si esta logeado o esta como invitado
 const nivelVisible = computed(() => {
   if (!authStore.estaAutenticado) {
     return 'Invitado'
@@ -282,6 +284,7 @@ const saludoHero = computed(() => {
   return `Hola ${nombre}, revisaremos tu nivel asignado.`
 })
 
+//eventos de botones usa router paraestablecer en que ruta estar segun su atenticacion
 const empezarJugar = () => {
   if (!authStore.estaAutenticado) {
     router.push({ name: 'login' })
