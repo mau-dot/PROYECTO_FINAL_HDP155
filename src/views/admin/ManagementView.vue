@@ -1,6 +1,7 @@
 <template>
   <Navbar/>
   <div class="container py-4 pt-5 mt-5">
+    
     <div class="d-flex justify-content-between align-items-center mb-4 bg-secondary text-white p-4 rounded shadow-lg">
       <div>
         <h1 class="h3 mb-1">📚 Gestión del Contenido Educativo</h1>
@@ -9,6 +10,13 @@
       <router-link to="/admin/dashboard" class="btn btn-light fw-bold shadow-sm">
         👥 Ver Alumnos
       </router-link>
+    </div>
+
+    <div v-if="leccionesStore.mensajeExito" class="alert alert-success fw-bold text-center">
+      {{ leccionesStore.mensajeExito }}
+    </div>
+    <div v-if="leccionesStore.mensajeError" class="alert alert-danger fw-bold text-center">
+      {{ leccionesStore.mensajeError }}
     </div>
 
     <div class="row g-4">
@@ -20,7 +28,7 @@
         <button 
           v-if="leccionSeleccionada" 
           @click="limpiarEdicion" 
-          class="btn btn-sm btn-danger w-100 mt-2 fw-bold"
+          class="btn btn-sm btn-danger w-100 mt-2 fw-bold shadow-sm"
         >
           ❌ Cancelar Edición Actual
         </button>
@@ -30,43 +38,33 @@
         <div class="card shadow-sm border-0 my-3">
           <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0 fw-bold">📖 Lecciones Disponibles</h5>
-            <span class="badge bg-light text-dark">{{ listaLecciones.length }} lecciones</span>
+            <span class="badge bg-light text-dark fw-bold">{{ leccionesStore.listaLecciones.length }} en total</span>
           </div>
           <div class="card-body p-0">
             <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0 bg-white">
-                <thead class="table-dark">
+              <table class="table table-hover table-striped mb-0 align-middle">
+                <thead class="table-secondary">
                   <tr>
-                    <th>Nivel</th>
-                    <th>Título / Dinámica</th>
-                    <th class="text-center">Acciones</th>
+                    <th class="ps-3">Nivel</th>
+                    <th>Título de la Lección</th>
+                    <th>Tipo</th>
+                    <th class="text-end pe-3">Opciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="leccion in listaLecciones" :key="leccion.id">
-                    <td>
-                      <span class="badge bg-info text-dark fw-bold">Nivel {{ leccion.nivel }}</span>
-                    </td>
-                    <td>
-                      <div class="fw-bold">{{ leccion.titulo }}</div>
-                      <small class="text-muted d-inline-block text-truncate" style="max-width: 250px;">
-                        {{ leccion.contenido || leccion.descripcion || 'Sin descripción' }}
-                      </small>
-                    </td>
-                    <td class="text-center">
-                      <div class="btn-group btn-group-sm">
-                        <button @click="seleccionarParaEditar(leccion)" class="btn btn-outline-primary" title="Editar">
-                          ✏️
-                        </button>
-                        <button @click="eliminarLeccion(leccion.id)" class="btn btn-outline-danger" title="Eliminar">
-                          🗑️
-                        </button>
-                      </div>
-                    </td>
+                  <tr v-if="leccionesStore.cargando">
+                    <td colspan="4" class="text-center text-muted py-4 fw-bold">Cargando lecciones... ⏳</td>
                   </tr>
-                  <tr v-if="listaLecciones.length === 0">
-                    <td colspan="3" class="text-center py-4 text-muted">
-                      No hay lecciones registradas. ¡Crea la primera usando el formulario!
+                  <tr v-else-if="leccionesStore.listaLecciones.length === 0">
+                    <td colspan="4" class="text-center text-muted py-4">No hay lecciones registradas aún.</td>
+                  </tr>
+                  <tr v-else v-for="leccion in leccionesStore.listaLecciones" :key="leccion.id">
+                    <td class="ps-3"><span class="badge bg-info text-dark shadow-sm">Nivel {{ leccion.nivel }}</span></td>
+                    <td class="fw-bold text-secondary">{{ leccion.titulo }}</td>
+                    <td><span class="badge bg-light text-secondary border">{{ leccion.tipo }}</span></td>
+                    <td class="text-end pe-3">
+                      <button @click="seleccionarParaEditar(leccion)" class="btn btn-sm btn-warning me-2 fw-bold shadow-sm" title="Editar Lección">✏️</button>
+                      <button @click="confirmarEliminacion(leccion.id)" class="btn btn-sm btn-danger fw-bold shadow-sm" title="Eliminar Lección">🗑️</button>
                     </td>
                   </tr>
                 </tbody>
@@ -76,29 +74,46 @@
         </div>
       </div>
     </div>
+
+    <div v-if="mostrarModalEliminar" class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title fw-bold">⚠️ Confirmar Borrado</h5>
+            <button type="button" class="btn-close btn-close-white" @click="mostrarModalEliminar = false"></button>
+          </div>
+          <div class="modal-body text-center p-4">
+            <h1 class="display-1 mb-3">🔥</h1>
+            <p class="fs-5">¿Seguro que deseas eliminar esta lección del catálogo infantil? Esto no se puede deshacer.</p>
+          </div>
+          <div class="modal-footer justify-content-center">
+            <button type="button" class="btn btn-secondary fw-bold px-4" @click="mostrarModalEliminar = false">Cancelar</button>
+            <button type="button" class="btn btn-danger fw-bold px-4" @click="ejecutarEliminacion">Sí, eliminar lección</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
   <Footer/>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { database } from '@/database/db' // Ruta exacta verificada
+import { useLeccionesStore } from '@/stores/leccionesStore'
 import LessonForm from '@/components/admin/LessonForm.vue'
 import Navbar from '@/components/common/Navbar.vue'
 import Footer from '@/components/common/Footer.vue'
-const listaLecciones = ref([])
+
+const leccionesStore = useLeccionesStore()
 const leccionSeleccionada = ref(null)
 
-const cargarLecciones = async () => {
-  try {
-    listaLecciones.value = await database.lecciones.toArray()
-  } catch (error) {
-    console.error("Error al cargar lecciones de Dexie:", error)
-  }
-}
+const mostrarModalEliminar = ref(false)
+const idAEliminar = ref(null)
 
-onMounted(() => {
-  cargarLecciones()
+onMounted(async () => {
+  // Llama a Pinia en lugar de Dexie
+  await leccionesStore.cargarLecciones()
 })
 
 const seleccionarParaEditar = (leccion) => {
@@ -110,27 +125,21 @@ const limpiarEdicion = () => {
 }
 
 const manejarGuardarLeccion = async (datosLeccion) => {
-  try {
-    if (datosLeccion.id) {
-      await database.lecciones.update(datosLeccion.id, datosLeccion)
-    } else {
-      await database.lecciones.add(datosLeccion)
-    }
-    leccionSeleccionada.value = null
-    await cargarLecciones()
-  } catch (error) {
-    console.error("Error al procesar la lección en Dexie:", error)
-  }
+  // El store se encarga de saber si actualiza o crea
+  await leccionesStore.guardarLeccion(datosLeccion)
+  limpiarEdicion()
 }
 
-const eliminarLeccion = async (idLeccion) => {
-  if (confirm("¿Seguro que deseas eliminar esta lección del catálogo infantil?")) {
-    try {
-      await database.lecciones.delete(idLeccion)
-      await cargarLecciones()
-    } catch (error) {
-      console.error("Error al borrar la lección de Dexie:", error)
-    }
+const confirmarEliminacion = (idLeccion) => {
+  idAEliminar.value = idLeccion
+  mostrarModalEliminar.value = true
+}
+
+const ejecutarEliminacion = async () => {
+  if (idAEliminar.value) {
+    await leccionesStore.eliminarLeccion(idAEliminar.value)
+    mostrarModalEliminar.value = false
+    idAEliminar.value = null
   }
 }
 </script>

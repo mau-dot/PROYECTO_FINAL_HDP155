@@ -39,7 +39,7 @@
         </div>
 
         <button type="submit" class="btn btn-primary w-100 fw-bold" :disabled="authStore.cargando">
-          {{ useAuthStore.cargando ? 'Ingresando...' : 'Ingresar' }}
+          {{ authStore.cargando ? 'Ingresando...' : 'Ingresar' }}
         </button>
 
         <!--Esto sera privado-->
