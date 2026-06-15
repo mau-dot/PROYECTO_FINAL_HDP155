@@ -17,7 +17,7 @@ database.version(1).stores({
   usuarios: '++id, nombreusuario, apellido, edad, rol, nivel', 
   
   // Lecciones: filtro por 'nivel' para cargar rapido las lecciones que le tocan al child por edad.
-  lecciones: '++id, nivel, titulo, tipo, contenido', 
+  lecciones: '++id, nivel, titulo, tipo', 
   
   // Medallas: solo necesitamos buscar por nombre o id.
   medallas: '++id, nombre',
