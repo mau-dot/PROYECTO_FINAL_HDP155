@@ -13,6 +13,7 @@
     <div class="row g-4">
       <div class="col-12 col-lg-5">
         <LessonForm 
+          :key="formKey"
           :leccionToEdit="leccionSeleccionada" 
           @guardarLeccion="manejarGuardarLeccion"
         />
@@ -80,11 +81,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { database } from '@/database/db' // Ruta exacta verificada
+import { database } from '@/database/db' 
 import LessonForm from '@/components/admin/LessonForm.vue'
 
 const listaLecciones = ref([])
 const leccionSeleccionada = ref(null)
+
+// 💡 Contador reactivo para controlar el estado limpio del formulario
+const formKey = ref(0)
 
 const cargarLecciones = async () => {
   try {
@@ -104,6 +108,7 @@ const seleccionarParaEditar = (leccion) => {
 
 const limpiarEdicion = () => {
   leccionSeleccionada.value = null
+  formKey.value++ // Forzamos limpieza si cancelan manualmente
 }
 
 const manejarGuardarLeccion = async (datosLeccion) => {
@@ -113,7 +118,9 @@ const manejarGuardarLeccion = async (datosLeccion) => {
     } else {
       await database.lecciones.add(datosLeccion)
     }
+    
     leccionSeleccionada.value = null
+    formKey.value++ // 🔥 ¡Aquí ocurre la magia! Incrementamos la llave para resetear los inputs del hijo
     await cargarLecciones()
   } catch (error) {
     console.error("Error al procesar la lección en Dexie:", error)
