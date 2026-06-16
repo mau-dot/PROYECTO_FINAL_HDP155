@@ -1,17 +1,12 @@
 <script setup>
-// Removida la importación manual de defineProps y defineEmits. 
-// En Vue 3 con <script setup>, son macros globales automáticas.
-
 defineProps({
-  // Array de estudiantes que pasará la vista padre
   usuarios: {
     type: Array,
     required: true
-    // Estructura esperada: [{ id: 1, nombre: 'Luisito', edad: 4, progreso: 60 }]
   }
 })
 
-const emit = defineEmits(['verProgreso', 'eliminarUsuario'])
+const emit = defineEmits(['verProgreso', 'eliminarUsuario', 'editarUsuario'])
 </script>
 
 <template>
@@ -24,15 +19,18 @@ const emit = defineEmits(['verProgreso', 'eliminarUsuario'])
       <table class="table table-hover table-striped align-middle mb-0 bg-white">
         <thead class="table-dark">
           <tr>
-            <th scope="col" class="ps-4">Nombre del Alumno</th>
+            <th scope="col" class="ps-4">Alumno</th>
+            <th scope="col">Usuario (Nick)</th>
             <th scope="col">Edad</th>
-            <th scope="col" style="width: 35%;">Progreso del Nivel</th>
+            <th scope="col">Nivel</th>
+            <th scope="col">Medallas</th>
+            <th scope="col" style="width: 25%;">Progreso</th>
             <th scope="col" class="text-end pe-4">Acciones Administrativas</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="usuarios.length === 0">
-            <td colspan="4" class="text-center py-4 text-muted">
+            <td colspan="7" class="text-center py-4 text-muted">
               No hay alumnos registrados en el sistema actualmente.
             </td>
           </tr>
@@ -41,7 +39,12 @@ const emit = defineEmits(['verProgreso', 'eliminarUsuario'])
             <td class="fw-bold text-secondary ps-4">
                {{ user.nombre }}
             </td>
+            <td>
+              <span class="badge bg-light text-dark border">{{ user.nombreusuario }}</span>
+            </td>
             <td>{{ user.edad }} años</td>
+            <td>Nivel {{ user.nivel }}</td>
+            <td>🏅 {{ user.medallasCount || 0 }}</td>
             <td>
               <div class="d-flex align-items-center gap-2">
                 <div class="progress w-100" style="height: 12px;">
@@ -60,18 +63,25 @@ const emit = defineEmits(['verProgreso', 'eliminarUsuario'])
             <td class="text-end pe-4">
               <div class="btn-group gap-1">
                 <button 
+                  @click="emit('editarUsuario', user)" 
+                  class="btn btn-sm btn-outline-warning fw-bold"
+                  title="Editar datos del alumno"
+                >
+                   ✏️ Editar
+                </button>
+                <button 
                   @click="emit('verProgreso', user)" 
                   class="btn btn-sm btn-outline-primary fw-bold"
                   title="Ver estadísticas detalladas"
                 >
-                   Detalles
+                   📊 Detalles
                 </button>
                 <button 
                   @click="emit('eliminarUsuario', user.id)" 
                   class="btn btn-sm btn-outline-danger fw-bold"
                   title="Dar de baja perfil de alumno"
                 >
-                   Dar de Baja
+                   🗑️ Baja
                 </button>
               </div>
             </td>

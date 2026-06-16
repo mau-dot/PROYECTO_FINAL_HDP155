@@ -99,10 +99,19 @@ export const useChildStore = defineStore('child', () => {
     return Math.round((sumaNiveles / (listaAlumnos.value.length * 4)) * 100)
   })
 
-  const totalNivelMax = computed(() =>
+  const totalNivel4 = computed(() =>
     listaAlumnos.value.filter(al => al.nivel === 4).length
   )
 
+    const totalNivel3 = computed(() =>
+    listaAlumnos.value.filter(al => al.nivel === 3).length
+  )
+    const totalNivel2 = computed(() =>
+    listaAlumnos.value.filter(al => al.nivel === 2).length
+  )
+    const totalNivel1 = computed(() =>
+    listaAlumnos.value.filter(al => al.nivel === 1).length
+  )
   // ===== ACCIONES DEL ADMINISTRADOR =====
 
   // Cargar todos los alumnos (solo admin)
@@ -296,7 +305,10 @@ export const useChildStore = defineStore('child', () => {
     // KPIs
     totalAlumnos,
     promedioProgreso,
-    totalNivelMax,
+    totalNivel1,
+    totalNivel2,
+    totalNivel3,
+    totalNivel4,
     // Acciones admin
     cargarAlumnos,
     registrarAlumno,
