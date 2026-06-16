@@ -45,9 +45,9 @@ const toggleTema = () => {
 
           <!--Mostrando usuario logeado, solo si esta autenticado-->
           <li v-if="authStore.estaAutenticado" class="nav-item">
-            <span class="text-white fw-bold px-3" >
+            <RouterLink to="/perfil"  class="nav-link text-white fw-bold px-3" >
               👤 {{ authStore.usuarioActual?.nombre || authStore.usuarioActual?.nombreusuario }}
-            </span>
+            </RouterLink>
           </li>
           <!--Boton de cierre de sesion-->
           <li v-if="authStore.estaAutenticado" class="nav-item">
