@@ -8,6 +8,7 @@ import LoginView from '@/views/LoginView.vue'
 
 import DashboardView from '@/views/admin/DashboardView.vue'
 import ManagementView from '@/views/admin/ManagementView.vue'
+import RegisterView from '@/views/RegisterView.vue'
 
 import Level1View from '@/views/levels/Level1View.vue'
 import Level2View from '@/views/levels/Level2View.vue'
@@ -22,13 +23,14 @@ const router = createRouter({
     //rutas publicas
     {path: '/', name: 'home', component:HomeView},
     {path: '/login', name: 'login', component:LoginView},
+    { path: '/register', name: 'register', component: RegisterView },
 
     //ruta de perfil protegida, solo requiere un usuario logeado
-    { 
-      path: '/perfil', 
-      name: 'profile', 
-      component: ProfileView, 
-      meta: { requiereAuth: true } 
+    {
+      path: '/perfil',
+      name: 'profile',
+      component: ProfileView,
+      meta: { requiereAuth: true }
     },
 
     //rutas del administrador (protegidas)
@@ -53,23 +55,23 @@ const router = createRouter({
       component : Level1View,
       meta : {requiereAuth:true, nivelRequerido: 1}
     },
-    { 
-      path: '/juego/nivel-2', 
-      name: 'level2', 
+    {
+      path: '/juego/nivel-2',
+      name: 'level2',
       component: Level2View,
-      meta: { requiereAuth: true, nivelRequerido: 2 } 
+      meta: { requiereAuth: true, nivelRequerido: 2 }
     },
-    { 
-      path: '/juego/nivel-3', 
-      name: 'level3', 
+    {
+      path: '/juego/nivel-3',
+      name: 'level3',
       component: Level3View,
-      meta: { requiereAuth: true, nivelRequerido: 3 } 
+      meta: { requiereAuth: true, nivelRequerido: 3 }
     },
-    { 
-      path: '/juego/nivel-4', 
-      name: 'level4', 
+    {
+      path: '/juego/nivel-4',
+      name: 'level4',
       component: Level4View,
-      meta: { requiereAuth: true, nivelRequerido: 4 } 
+      meta: { requiereAuth: true, nivelRequerido: 4 }
     }
 
   ],
@@ -79,7 +81,7 @@ const router = createRouter({
 
 /*
   destino: a donde quiere ir el usuario
-  
+
 
 */
 router.beforeEach((destino) => {
