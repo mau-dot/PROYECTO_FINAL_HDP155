@@ -203,18 +203,11 @@ export const useChildStore = defineStore('child', () => {
 
     cargando.value = true
     try {
-      const nombreUsuarioLimpio = datosActualizados.nombreusuario.trim().toLowerCase()
-
-        // Verificar si el nuevo usuario ya existe y NO es de él mismo
-      const existe = await database.usuarios.get({ nombreusuario: nombreUsuarioLimpio })
-      if (existe && existe.id !== idNino) {
-        mensajeError.value = 'Este nombre de usuario ya está ocupado por otro jugador.'
-        return false
-      }
-
-      await database.usuarios.update(idNino, { nombreusuario: nuevoNombreUsuario.trim() })
-      mensajeExito.value = 'Nombre de usuario actualizado correctamente'
-      return true
+       await database.usuarios.update(idNino, { 
+       nombreusuario: nuevoNombreUsuario.trim().toLowerCase() 
+    })
+    mensajeExito.value = 'Nombre de usuario actualizado correctamente'
+  return true
     } catch (error) {
       console.error('Error al actualizar nombre de usuario:', error)
       mensajeError.value = 'No se pudo actualizar el nombre de usuario'

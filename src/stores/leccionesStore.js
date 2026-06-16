@@ -22,39 +22,35 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     if (!datos.tipo || datos.tipo.trim() === '') {
       return 'El tipo de lección es obligatorio'
     }
-    
-    // Asegurarnos de que el contenido sea un arreglo válido
     if (!datos.contenido || !Array.isArray(datos.contenido) || datos.contenido.length === 0) {
       return 'Debes agregar al menos un ejercicio a la lección'
     }
 
-    // Validaciones específicas según el tipo de juego
+    // Validaciones por tipo de juego
     if (datos.tipo === 'opcion_multiple') {
       for (let i = 0; i < datos.contenido.length; i++) {
-        const item = datos.contenido[i];
-        const opcionesValidas = item.opciones.filter(o => o.trim() !== '');
-        
+        const item = datos.contenido[i]
+        const opcionesValidas = item.opciones.filter(o => o.trim() !== '')
+
         if (opcionesValidas.length < 3) {
-          return `La pregunta #${i + 1} debe tener al menos 3 opciones llenas.`;
+          return `La pregunta #${i + 1} debe tener al menos 3 opciones llenas`
         }
-        
-        // Validar que no haya opciones repetidas
-        const opcionesUnicas = new Set(opcionesValidas);
+
+        const opcionesUnicas = new Set(opcionesValidas)
         if (opcionesUnicas.size !== opcionesValidas.length) {
-          return `La pregunta #${i + 1} tiene opciones de respuesta repetidas.`;
+          return `La pregunta #${i + 1} tiene opciones de respuesta repetidas`
         }
 
         if (!item.respuestaCorrecta || item.respuestaCorrecta.trim() === '') {
-          return `Selecciona la respuesta correcta para la pregunta #${i + 1}.`;
+          return `Selecciona la respuesta correcta para la pregunta #${i + 1}`
         }
       }
     }
 
-    // Aquí a futuro el Store validará automáticamente los otros tipos
     if (datos.tipo === 'completar_oracion') {
       for (let i = 0; i < datos.contenido.length; i++) {
         if (!datos.contenido[i].oracion.includes('___')) {
-          return `El ejercicio #${i + 1} debe incluir '___' (tres guiones bajos) donde irá la palabra oculta.`;
+          return `El ejercicio #${i + 1} debe incluir '___' donde irá la palabra oculta`
         }
       }
     }
@@ -63,6 +59,8 @@ export const useLeccionesStore = defineStore('lecciones', () => {
   }
 
   // ===== ACCIONES =====
+
+  // Cargar todas las lecciones
   const cargarLecciones = async () => {
     cargando.value = true
     mensajeError.value = ''
@@ -76,6 +74,7 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     }
   }
 
+  // Guardar lección nueva o editar una existente
   const guardarLeccion = async (datosLeccion) => {
     mensajeError.value = ''
     mensajeExito.value = ''
@@ -97,46 +96,54 @@ export const useLeccionesStore = defineStore('lecciones', () => {
       }
       await cargarLecciones()
       return true
-    } catch (error) { 
-       console.error('Error al guardar lección:', error)
-       mensajeError.value = 'No se pudo guardar la lección'      
-       return false    
-      } finally {
-        cargando.value = false    
-      }  
+    } catch (error) {
+      console.error('Error al guardar lección:', error)
+      mensajeError.value = 'No se pudo guardar la lección'
+      return false
+    } finally {
+      cargando.value = false
     }
-    const eliminarLeccion = async (idLeccion) => {    
-      mensajeError.value = ''    
-      mensajeExito.value = ''
-          if (!idLeccion) {      
-            mensajeError.value = 'ID de lección no válido'      
-            return false    
-          }    
-          cargando.value = true    
-          try {      
-            await database.lecciones.delete(idLeccion)      
-            await cargarLecciones()      
-            mensajeExito.value = 'Lección eliminada correctamente'
-            return true    
-          } catch (error) {      
-            console.error('Error al eliminar lección:', error)      
-            mensajeError.value = 'No se pudo eliminar la lección'      
-            return false    
-          } finally {      
-            cargando.value = false    
-          }  
-        }  
-       const limpiarMensajes = () => {    
-        mensajeError.value = ''   
-        mensajeExito.value = ''  
-      }  
-      return {    
-        listaLecciones,
-        cargando,    
-        mensajeError,    
-        mensajeExito,    
-        cargarLecciones,
-        guardarLeccion,  
-        eliminarLeccion,    
-        limpiarMensajes  
-      }})
+  }
+
+  // Eliminar una lección por su id
+  const eliminarLeccion = async (idLeccion) => {
+    mensajeError.value = ''
+    mensajeExito.value = ''
+
+    if (!idLeccion) {
+      mensajeError.value = 'ID de lección no válido'
+      return false
+    }
+
+    cargando.value = true
+    try {
+      await database.lecciones.delete(idLeccion)
+      await cargarLecciones()
+      mensajeExito.value = 'Lección eliminada correctamente'
+      return true
+    } catch (error) {
+      console.error('Error al eliminar lección:', error)
+      mensajeError.value = 'No se pudo eliminar la lección'
+      return false
+    } finally {
+      cargando.value = false
+    }
+  }
+
+  // Limpiar mensajes manualmente si se necesita
+  const limpiarMensajes = () => {
+    mensajeError.value = ''
+    mensajeExito.value = ''
+  }
+
+  return {
+    listaLecciones,
+    cargando,
+    mensajeError,
+    mensajeExito,
+    cargarLecciones,
+    guardarLeccion,
+    eliminarLeccion,
+    limpiarMensajes
+  }
+})
