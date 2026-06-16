@@ -23,7 +23,6 @@ const router = createRouter({
     //rutas publicas
     {path: '/', name: 'home', component:HomeView},
     {path: '/login', name: 'login', component:LoginView},
-    { path: '/register', name: 'register', component: RegisterView },
 
     //ruta de perfil protegida, solo requiere un usuario logeado
     {
@@ -46,6 +45,13 @@ const router = createRouter({
       component : DashboardView,
       meta : {requiereAuth: true, requiereAdmin: true}
     },
+    { 
+      path: '/admin/register',
+      name: 'register', 
+      component: RegisterView, 
+      meta : {requiereAuth: true, requiereAdmin:true}
+    },
+
 
 
     //rutas de jugadores (child) (protegidas por nivel/edad)

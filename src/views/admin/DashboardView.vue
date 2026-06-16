@@ -193,7 +193,7 @@ const confirmarEliminacion = (idAlumno) => {
 
 const ejecutarEliminacion = async () => {
   if (idAEliminar.value) {
-    await childStore.eliminarNino(idAEliminar.value) // Llama a Pinia
+    await childStore.eliminarAlumno(idAEliminar.value) // Llama a Pinia
     mostrarModalEliminar.value = false
     idAEliminar.value = null
   }
