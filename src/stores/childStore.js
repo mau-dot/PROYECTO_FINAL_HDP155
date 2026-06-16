@@ -120,36 +120,47 @@ export const useChildStore = defineStore('child', () => {
     }
   }
 
-  // Registrar un niño nuevo (solo admin)
-  const registrarNino = async (datosNino) => {
-    mensajeError.value = ''
-    mensajeExito.value = ''
+  // ===== ACCIONES =====
 
-    const error = await validarDatosNino(datosNino, false)
-    if (error) {
-      mensajeError.value = error
+  const registrarAlumno = async (datosAlumno) => {
+    limpiarMensajes()
+
+    // 1. Usar tus validadores integrados
+    const errorUsuario = validarNombreUsuario(datosAlumno.nombreusuario)
+    if (errorUsuario) {
+      mensajeError.value = errorUsuario
+      return false
+    }
+
+    const errorClave = validarPassword(datosAlumno.password)
+    if (errorClave) {
+      mensajeError.value = errorClave
       return false
     }
 
     cargando.value = true
     try {
-      await database.usuarios.add({
-        nombreusuario: datosNino.nombreusuario.trim(),
-        password: datosNino.password,
-        rol: 'child',
-        nombre: datosNino.nombre.trim(),
-        apellido: datosNino.apellido?.trim() || '',
-        edad: datosNino.edad,
-        nivel: datosNino.nivel,
-        medallasCount: 0,
-        fechaRegistro: new Date().toISOString()
-      })
-      await cargarAlumnos()
-      mensajeExito.value = 'Niño registrado correctamente'
+      // 2. Verificar que no exista otro niño (o admin) con el mismo usuario
+      const usuarioExistente = await database.usuarios.get({ nombreusuario: datosAlumno.nombreusuario })
+      if (usuarioExistente) {
+        mensajeError.value = `El nombre de usuario "${datosAlumno.nombreusuario}" ya está en uso. Elige otro.`
+        return false
+      }
+
+      // 3. Guardar en Dexie
+      await database.usuarios.add(datosAlumno)
+      
+      // 4. Refrescar la lista de alumnos para que el Dashboard se actualice instantáneamente
+      if (listaAlumnos.value) {
+        // Asumiendo que tienes una función cargarAlumnos() en este store
+        await cargarAlumnos() 
+      }
+      
+      mensajeExito.value = 'Alumno registrado correctamente'
       return true
     } catch (error) {
       console.error('Error al registrar niño:', error)
-      mensajeError.value = 'No se pudo registrar el niño'
+      mensajeError.value = 'Ocurrió un error inesperado al guardar en la base de datos.'
       return false
     } finally {
       cargando.value = false
@@ -288,7 +299,7 @@ export const useChildStore = defineStore('child', () => {
     totalNivelMax,
     // Acciones admin
     cargarAlumnos,
-    registrarNino,
+    registrarAlumno,
     eliminarAlumno,
     // Acciones niño
     actualizarNombreUsuario,
