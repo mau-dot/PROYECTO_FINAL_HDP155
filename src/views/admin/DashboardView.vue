@@ -91,7 +91,7 @@
         :usuarios="childStore.listaAlumnosMapeados"
         @verProgreso="mostrarDetalle"
         @eliminarUsuario="confirmarEliminacion"
-        @editarUsuario="prepararEdicion"
+        @editarUsuario="AbrirEdicion"
       />
     </section>
 
@@ -182,9 +182,8 @@ const totalNivel1 = computed(()=> childStore.totalNivel1)
 
 
 // Función temporal para cuando definamos qué hacer con la edición
-const prepararEdicion = (user) => {
-  console.log('Botón editar clickeado. Alumno seleccionado:', user)
-  // Aquí irá la lógica que me indicarás a continuación
+const AbrirEdicion = (user) => {
+    router.push({name : 'editar-perfil-child', params : {id: user.id}});
 }
 
 const confirmarEliminacion = (idAlumno) => {

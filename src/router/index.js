@@ -9,6 +9,7 @@ import LoginView from '@/views/LoginView.vue'
 import DashboardView from '@/views/admin/DashboardView.vue'
 import ManagementView from '@/views/admin/ManagementView.vue'
 import RegisterView from '@/views/RegisterView.vue'
+import EditProfileView from '@/views/admin/EditProfileView.vue'
 
 import Level1View from '@/views/levels/Level1View.vue'
 import Level2View from '@/views/levels/Level2View.vue'
@@ -51,7 +52,12 @@ const router = createRouter({
       component: RegisterView, 
       meta : {requiereAuth: true, requiereAdmin:true}
     },
-
+    {
+      path: '/admin/edit-profile-child/:id',
+      name : 'editar-perfil-child',
+      component : EditProfileView,
+      meta : {requiereAuth:true, requiereAdmin: true}
+    },
 
 
     //rutas de jugadores (child) (protegidas por nivel/edad)

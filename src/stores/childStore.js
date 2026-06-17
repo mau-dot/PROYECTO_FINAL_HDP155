@@ -175,6 +175,45 @@ export const useChildStore = defineStore('child', () => {
       cargando.value = false
     }
   }
+  // ===== ACTUALIZAR ALUMNO =====
+  const actualizarAlumno = async (idNino, datosActualizados) => {
+    mensajeError.value = ''
+    mensajeExito.value = ''
+    cargando.value = true
+
+    try {
+      // 1. Si el admin escribió una nueva contraseña, la validamos. 
+      // Si no escribió nada, la eliminamos del objeto para no borrar su contraseña actual en la BD.
+      if (datosActualizados.password && datosActualizados.password.trim() !== '') {
+        const errorClave = validarPassword(datosActualizados.password)
+        if (errorClave) {
+          mensajeError.value = errorClave
+          return false
+        }
+      } else {
+        delete datosActualizados.password
+      }
+
+      // 2. Convertimos a números para evitar bugs
+      if (datosActualizados.edad) datosActualizados.edad = Number(datosActualizados.edad)
+      if (datosActualizados.nivel) datosActualizados.nivel = Number(datosActualizados.nivel)
+
+      // 3. Actualizamos en la base de datos usando el ID numérico
+      await database.usuarios.update(Number(idNino), datosActualizados)
+      
+      // 4. Refrescamos la lista global del store para que el Dashboard se actualice al volver
+      await cargarAlumnos()
+      
+      mensajeExito.value = 'Perfil del alumno actualizado correctamente'
+      return true
+    } catch (error) {
+      console.error('Error al actualizar alumno:', error)
+      mensajeError.value = 'Ocurrió un error al guardar los cambios en la base de datos.'
+      return false
+    } finally {
+      cargando.value = false
+    }
+  }
 
   // Eliminar un alumno por su id (solo admin)
   const eliminarAlumno = async (idAlumno) => {
@@ -312,6 +351,7 @@ export const useChildStore = defineStore('child', () => {
     // Acciones admin
     cargarAlumnos,
     registrarAlumno,
+    actualizarAlumno,
     eliminarAlumno,
     // Acciones niño
     actualizarNombreUsuario,
