@@ -27,7 +27,7 @@ const router = createRouter({
   routes: [
     //rutas publicas
     { path: '/', name: 'home', component: HomeView },
-    { path: '/login', name: 'login', component: LoginView },
+    { path: '/login', name: 'login', component: LoginView, meta: { hideMusic: true } },
 
     //ruta de perfil protegida, solo requiere un usuario logeado
     {
@@ -54,7 +54,7 @@ const router = createRouter({
       path: '/admin/register',
       name: 'register',
       component: RegisterView,
-      meta: { requiereAuth: true, requiereAdmin: true },
+      meta: { requiereAuth: true, requiereAdmin: true, hideMusic: true },
     },
     {
       path: '/admin/edit-profile-child/:id',
