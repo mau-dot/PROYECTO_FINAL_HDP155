@@ -1,5 +1,13 @@
 <template>
   <div class="container py-4">
+
+    <!-- Botón regresar -->
+    <div class="mb-3">
+      <button class="btn btn-outline-secondary btn-sm fw-bold" @click="$router.push({ name: 'home' })">
+        ← Regresar al inicio
+      </button>
+    </div>
+
     <div class="text-center mb-5 bg-light p-4 rounded-3 shadow-sm border-0 position-relative header-kids">
       <h1 class="display-5 fw-bold text-warning mb-2">🎈 ¡Mi Mundo de Aprendizaje! 🎈</h1>
       <p class="fs-5 text-secondary m-0">Nivel Exploradores (1 - 2 años)</p>
@@ -18,7 +26,7 @@
     </div>
 
     <template v-else>
-      <!-- Tema 1: Opción múltiple / colores -->
+      <!-- Tema 1: Opción múltiple -->
       <div v-if="leccionesOpcionMultiple.length > 0" class="mb-5">
         <h3 class="text-primary fw-bold mb-3 d-flex align-items-center">
           <span class="fs-2 me-2">🎨</span> Lecciones de Opción Múltiple
@@ -90,7 +98,7 @@
 
 <script>
 import GameCard from "@/components/game/GameCard.vue";
-import { database } from "@/database/db"; // ✅ nombre correcto
+import { database } from "@/database/db";
 
 export default {
   name: "Level1View",
@@ -99,12 +107,11 @@ export default {
     return {
       allLessons: [],
       completedLessonIds: [],
-      currentChildId: 1, // 🔁 reemplazar con el ID del niño en sesión
+      currentChildId: 1,
       cargando: true,
     };
   },
   computed: {
-    // Agrupa por tipo, igual a como lo guarda LessonForm
     leccionesOpcionMultiple() {
       return this.allLessons.filter(l => l.tipo === 'opcion_multiple').sort((a, b) => a.id - b.id);
     },
@@ -123,13 +130,11 @@ export default {
       try {
         this.cargando = true;
 
-        // ✅ Tabla: 'lecciones' | campo nivel guarda número (1, 2, 3, 4)
         this.allLessons = await database.lecciones
           .where('nivel')
-          .equals(1) // número, no string
+          .equals(1)
           .toArray();
 
-        // ✅ Campo correcto: 'usuarioId' según tu db.js
         const progressRecords = await database.progress
           .where('usuarioId')
           .equals(this.currentChildId)
@@ -148,14 +153,24 @@ export default {
     isLessonCompleted(lessonId) {
       return this.completedLessonIds.includes(lessonId);
     },
-    // Recibe el array del grupo (ej: leccionesOpcionMultiple) e índice
     isLessonLocked(group, index) {
       if (index === 0) return false;
       const previousLesson = group[index - 1];
       return !this.isLessonCompleted(previousLesson.id);
     },
     goToLesson(lessonId) {
-      this.$router.push({ name: 'PlayLesson', params: { id: lessonId } });
+      // ✅ Detecta el tipo y redirige a la view correcta
+      const lesson = this.allLessons.find(l => l.id === lessonId)
+      if (!lesson) return
+
+      const routeMap = {
+        opcion_multiple:   'play-multiple',
+        completar_oracion: 'play-fill',
+        matematica:        'play-math'
+      }
+
+      const routeName = routeMap[lesson.tipo] || 'play-multiple'
+      this.$router.push({ name: routeName, params: { id: lessonId } })
     }
   }
 };

@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'//import store de Pinia
-
+import { useAuthStore } from '@/stores/auth' //import store de Pinia
 
 //Importacion de vistas
 import HomeView from '@/views/HomeView.vue'
@@ -17,77 +16,99 @@ import Level3View from '@/views/levels/Level3View.vue'
 import Level4View from '@/views/levels/Level4View.vue'
 import ProfileView from '@/views/ProfileView.vue'
 
+//views de juegos
+import PlayMultipleView from '@/views/levels/play/PlayMultipleView.vue'
+import PlayFillView from '@/views/levels/play/PlayFillView.vue'
+import PlayMathView from '@/views/levels/play/PlayMathView.vue'
+
 //configuracion de rutas
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     //rutas publicas
-    {path: '/', name: 'home', component:HomeView},
-    {path: '/login', name: 'login', component:LoginView},
+    { path: '/', name: 'home', component: HomeView },
+    { path: '/login', name: 'login', component: LoginView },
 
     //ruta de perfil protegida, solo requiere un usuario logeado
     {
       path: '/perfil',
       name: 'profile',
       component: ProfileView,
-      meta: { requiereAuth: true }
+      meta: { requiereAuth: true },
     },
 
     //rutas del administrador (protegidas)
     {
       path: '/admin/management',
-      name : 'management',
+      name: 'management',
       component: ManagementView,
-      meta :{requiereAuth: true, requiereAdmin: true}
+      meta: { requiereAuth: true, requiereAdmin: true },
     },
     {
       path: '/admin/dashboard',
-      name : 'dashboard',
-      component : DashboardView,
-      meta : {requiereAuth: true, requiereAdmin: true}
+      name: 'dashboard',
+      component: DashboardView,
+      meta: { requiereAuth: true, requiereAdmin: true },
     },
-    { 
+    {
       path: '/admin/register',
-      name: 'register', 
-      component: RegisterView, 
-      meta : {requiereAuth: true, requiereAdmin:true}
+      name: 'register',
+      component: RegisterView,
+      meta: { requiereAuth: true, requiereAdmin: true },
     },
     {
       path: '/admin/edit-profile-child/:id',
-      name : 'editar-perfil-child',
-      component : EditProfileView,
-      meta : {requiereAuth:true, requiereAdmin: true}
+      name: 'editar-perfil-child',
+      component: EditProfileView,
+      meta: { requiereAuth: true, requiereAdmin: true },
     },
-
 
     //rutas de jugadores (child) (protegidas por nivel/edad)
     {
-      path : '/juego/nivel-1',
-      name : 'level1',
-      component : Level1View,
-      meta : {requiereAuth:true, nivelRequerido: 1}
+      path: '/juego/nivel-1',
+      name: 'level1',
+      component: Level1View,
+      meta: { requiereAuth: true, nivelRequerido: 1 },
     },
     {
       path: '/juego/nivel-2',
       name: 'level2',
       component: Level2View,
-      meta: { requiereAuth: true, nivelRequerido: 2 }
+      meta: { requiereAuth: true, nivelRequerido: 2 },
     },
     {
       path: '/juego/nivel-3',
       name: 'level3',
       component: Level3View,
-      meta: { requiereAuth: true, nivelRequerido: 3 }
+      meta: { requiereAuth: true, nivelRequerido: 3 },
     },
     {
       path: '/juego/nivel-4',
       name: 'level4',
       component: Level4View,
-      meta: { requiereAuth: true, nivelRequerido: 4 }
-    }
-
+      meta: { requiereAuth: true, nivelRequerido: 4 },
+    },
+    // Rutas de juego (play) - reutilizables por tipo
+    {
+      path: '/juego/play/opcion-multiple/:id',
+      name: 'play-multiple',
+      component: PlayMultipleView,
+      meta: { requiereAuth: true },
+    },
+    {
+      path: '/juego/play/completar/:id',
+      name: 'play-fill',
+      component: PlayFillView,
+      meta: { requiereAuth: true },
+    },
+    {
+      path: '/juego/play/matematica/:id',
+      name: 'play-math',
+      component: PlayMathView,
+      meta: { requiereAuth: true },
+    },
   ],
-});
+})
 
 //guards seguridad global
 
@@ -97,20 +118,19 @@ const router = createRouter({
 
 */
 router.beforeEach((destino) => {
-
   //instancia del store de autenticacion para obtener los datos en tiempo actual del usuario
-  const authStore = useAuthStore();
+  const authStore = useAuthStore()
 
   // 1 ¿La ruta a la que va requiere estar logueado, pero NO está autenticado?
   if (destino.meta.requiereAuth && !authStore.estaAutenticado) {
     // Bloqueamos el paso y lo redirigimos a la pantalla de Login
-    return { name: 'login' };
+    return { name: 'login' }
   }
 
   // 2 ¿La ruta requiere ser Administrador, pero el usuario NO lo es?
   if (destino.meta.requiereAdmin && !authStore.esAdmin) {
     // Lo sacamos de ahí y lo mandamos al Home público
-    return { name: 'home' };
+    return { name: 'home' }
   }
 
   // 3 ¿La ruta pide un nivel específico y el usuario no coincide con ese nivel?
@@ -125,8 +145,6 @@ router.beforeEach((destino) => {
     }
   }
   return true
-});
-
-
+})
 
 export default router
