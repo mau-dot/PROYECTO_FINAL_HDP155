@@ -83,11 +83,14 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useLeccionesStore } from '@/stores/leccionesStore'
+import { database } from '@/database/db'
+import { useAuthStore } from '@/stores/auth'
+import ProgressBar from '@/components/game/ProgressBar.vue'
 
 const route = useRoute()
-const leccionesStore = useLeccionesStore()
+const authStore = useAuthStore()
 
+// ===== VARIABLES =====
 const cargando = ref(true)
 const leccion = ref(null)
 const juegoTerminado = ref(false)
@@ -97,52 +100,72 @@ const palabraArrastrada = ref(null)
 const respondida = ref(false)
 const respuestaCorrecta = ref(false)
 const aciertos = ref(0)
+const errores = ref(0)
 
+// ===== COMPUTED =====
 const ejercicioActual = computed(() => leccion.value?.contenido[preguntaActualIndex.value])
-const esUltimo = computed(() => preguntaActualIndex.value === (leccion.value?.contenido.length - 1))
-const porcentaje = computed(() => leccion.value ? (preguntaActualIndex.value / leccion.value.contenido.length) * 100 : 0)
 
-const partes = computed(() => ejercicioActual.value?.oracion.split('___') || [])
+const esUltimo = computed(() => preguntaActualIndex.value === (leccion.value?.contenido.length - 1))
+
+const porcentaje = computed(() => {
+  if (!leccion.value) return 0
+  if (juegoTerminado.value) return 100
+  return Math.round(((preguntaActualIndex.value + 1) / leccion.value.contenido.length) * 100)
+})
+
+const partes = computed(() => ejercicioActual.value?.oracion.split('___') || ['', ''])
+
+// ✅ Genera las palabras para arrastrar (correcta + distractor mezclados)
+const palabrasDisponibles = computed(() => {
+  if (!ejercicioActual.value) return []
+  const arr = [
+    ejercicioActual.value.palabraCorrecta,
+    ejercicioActual.value.distractor
+  ]
+  return arr.sort(() => Math.random() - 0.5)
+})
+
 const estadoHueco = computed(() => {
-  if (!palabraEnHueco.value) return 'hueco-vacio'
-  if (!respondida.value) return 'hueco-lleno'
+  if (!respondida.value) return palabraEnHueco.value ? 'hueco-lleno' : 'hueco-vacio'
   return respuestaCorrecta.value ? 'hueco-correcto' : 'hueco-incorrecto'
 })
 
+// ===== CARGAR LECCIÓN =====
 onMounted(async () => {
-  cargando.value = true
-  const id = Number(route.params.id)
-  leccion.value = await leccionesStore.obtenerLeccionPorId(id)
-  cargando.value = false
+  try {
+    const id = Number(route.params.id)
+    leccion.value = await database.lecciones.get(id)
+  } catch (e) {
+    console.error('Error cargando lección:', e)
+  } finally {
+    cargando.value = false
+  }
 })
 
-const onDragStart = (palabra, event) => {
-  if (respondida.value) return
+// ===== MÉTODOS =====
+// ✅ Nombre que coincide con @dragstart="arrastrar(palabra)" en el template
+const arrastrar = (palabra) => {
   palabraArrastrada.value = palabra
-  event.dataTransfer.effectAllowed = 'move'
 }
 
-const onDrop = () => {
-  if (respondida.value || !palabraArrastrada.value) return
+// ✅ Nombre que coincide con @drop="soltar" en el template
+const soltar = () => {
+  if (!palabraArrastrada.value) return
   palabraEnHueco.value = palabraArrastrada.value
   palabraArrastrada.value = null
-}
-
-const quitarPalabra = () => {
-  if (respondida.value) return
-  palabraEnHueco.value = null
-}
-
-const verificar = () => {
-  if (!palabraEnHueco.value) return
   respuestaCorrecta.value = palabraEnHueco.value === ejercicioActual.value.palabraCorrecta
-  if (respuestaCorrecta.value) aciertos.value++
+  if (respuestaCorrecta.value) {
+    aciertos.value++
+  } else {
+    errores.value++
+  }
   respondida.value = true
 }
 
-const siguiente = () => {
+const siguiente = async () => {
   if (esUltimo.value) {
     juegoTerminado.value = true
+    await guardarProgreso()
     return
   }
   preguntaActualIndex.value++
@@ -152,6 +175,44 @@ const siguiente = () => {
   respuestaCorrecta.value = false
 }
 
+// ===== GUARDAR PROGRESO EN DB =====
+const guardarProgreso = async () => {
+  try {
+    const usuarioId = authStore.usuarioActual?.id
+    if (!usuarioId) return
+
+    const existe = await database.progress
+      .where('[usuarioId+leccionId]')
+      .equals([usuarioId, leccion.value.id])
+      .first()
+
+    const puntaje = Math.round((aciertos.value / leccion.value.contenido.length) * 100)
+
+    if (existe) {
+      if (puntaje > existe.puntaje) {
+        await database.progress.update(existe.id, {
+          puntaje,
+          errores: errores.value,
+          esCompletado: true,
+          fechaIntento: new Date().toISOString()
+        })
+      }
+    } else {
+      await database.progress.add({
+        usuarioId,
+        leccionId: leccion.value.id,
+        nivel: leccion.value.nivel,
+        puntaje,
+        errores: errores.value,
+        esCompletado: true,
+        fechaIntento: new Date().toISOString()
+      })
+    }
+  } catch (e) {
+    console.error('Error guardando progreso:', e)
+  }
+}
+
 const reiniciar = () => {
   preguntaActualIndex.value = 0
   palabraEnHueco.value = null
@@ -159,6 +220,7 @@ const reiniciar = () => {
   respondida.value = false
   respuestaCorrecta.value = false
   aciertos.value = 0
+  errores.value = 0
   juegoTerminado.value = false
 }
 </script>
