@@ -17,7 +17,7 @@ export const useAuthStore = defineStore('auth', () => {
   if (sesionGuardada) {
     usuarioActual.value = JSON.parse(sesionGuardada)
   }
-  
+
   // funciones getters (propiedades computadas)
   const estaAutenticado = computed(() => usuarioActual.value !== null)
   const esAdmin = computed(() => usuarioActual.value?.rol === 'admin')
@@ -64,6 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+
   // Funcion para limpiar los datos al salir (cerrar sesión)
   const cerrarSesion = () => {
 
@@ -72,6 +73,16 @@ export const useAuthStore = defineStore('auth', () => {
     cargando.value = false // Asegura que la app no se quede congelada procesando
     localStorage.removeItem("hdp_sesion")
   }
+
+  const esNivelBloqueadoParaChild = (numeroNivelCard) => {
+  // Si no hay nadie logueado o es admin, esta regla no aplica aquí
+  if (!usuarioActual.value || usuarioActual.value.rol !== 'child') return false
+
+  const nivelDelEstudiante = Number(usuarioActual.value.nivel)
+
+  // Si el número de la tarjeta (ej: Nivel 4) es mayor que el nivel del niño (ej: Nivel 3), se bloquea (true)
+  return Number(numeroNivelCard) > nivelDelEstudiante
+}
 
   return {
     usuarioActual,
@@ -84,5 +95,6 @@ export const useAuthStore = defineStore('auth', () => {
     nivelUsuario,
     iniciarSesion,
     cerrarSesion,
+    esNivelBloqueadoParaChild,
   }
 })

@@ -187,7 +187,11 @@
             <div v-for="nivel in niveles" :key="nivel.id" class="col-md-6 col-xl-3">
               <article
                 class="card level-card h-100 border-0 shadow-sm"
-                :class="{ 'admin-disabled-card': authStore.esAdmin }"
+                :class="{
+                  'admin-disabled-card': authStore.esAdmin,
+                  'child-disabled-card':
+                    authStore.esChild && authStore.esNivelBloqueadoParaChild(nivel.id),
+                }"
               >
                 <div class="card-body d-flex flex-column p-4">
                   <div class="d-flex justify-content-between align-items-start mb-3">
@@ -203,15 +207,22 @@
                   <p class="text-primary fw-semibold mb-2">{{ nivel.titulo }}</p>
                   <p class="text-secondary mb-4">{{ nivel.descripcion }}</p>
 
-                  <BaseButton
-                    :texto="authStore.esAdmin ? 'No disponible' : 'Ver nivel'"
-                    color="info"
-                    emoji=""
-                    size="sm"
-                    class="mt-auto"
-                    :disabled="authStore.esAdmin"
+                  <button
+                    class="btn btn-info w-100 text-white fw-bold"
+                    :disabled="
+                      authStore.esAdmin ||
+                      (authStore.esChild && authStore.esNivelBloqueadoParaChild(nivel.id))
+                    "
                     @click="irALevel(nivel.ruta)"
-                  />
+                  >
+                    {{
+                      authStore.esAdmin
+                        ? 'No disponible'
+                        : authStore.esChild && authStore.esNivelBloqueadoParaChild(nivel.id)
+                          ? '🔒 Bloqueado'
+                          : 'Ver nivel'
+                    }}
+                  </button>
                 </div>
               </article>
             </div>
@@ -508,6 +519,20 @@ const irALevel = (rutaNivel) => {
 .py-lg-6 {
   padding-top: 5rem;
   padding-bottom: 5rem;
+}
+
+.child-disabled-card {
+  opacity: 0.5;
+  filter: grayscale(80%);
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Asegura el diseño del botón deshabilitado */
+button:disabled {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  cursor: not-allowed !important;
 }
 
 /* Burbuja */
