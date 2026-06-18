@@ -173,9 +173,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLeccionesStore } from '@/stores/leccionesStore'
+import { useAuthStore } from '@/stores/auth' // <-- IMPORTAMOS AUTH
 
 const router = useRouter()
 const leccionesStore = useLeccionesStore()
+const authStore = useAuthStore() // <-- INICIALIZAMOS AUTH
 
 // Variables reactivas
 const allLessons = ref([])
@@ -194,27 +196,28 @@ onMounted(async () => {
 const loadLevelData = async () => {
   cargando.value = true
   try {
-    // LLAMADO A PINIA CON EL NIVEL 3
-    const lecciones = await leccionesStore.cargarLeccionesPorNivel(3)
-    // Se ordenan por ID como lo tenían planteado originalmente
-    allLessons.value = (lecciones || []).sort((a, b) => a.id - b.id)
+    // 1. Sacamos el ID real del niño logueado
+    const idNinoActual = authStore.usuarioActual?.id || 1 
+
+    // 2. Usamos la FUNCIÓN MAESTRA estandarizada para Nivel 3
+    const datos = await leccionesStore.cargarDatosNivelCompleto(3, idNinoActual)
+    
+    // 3. Asignamos y ordenamos por ID (como pedía el diseño de este nivel)
+    allLessons.value = (datos.lecciones || []).sort((a, b) => a.id - b.id)
+    completedLessonIds.value = datos.completadas || []
   } catch (error) {
     console.error('Error cargando datos del nivel 3:', error)
     allLessons.value = []
+    completedLessonIds.value = []
   } finally {
     cargando.value = false
   }
 }
 
 // Funciones de estado
-const isLessonCompleted = (lessonId) => {
-  return completedLessonIds.value.includes(lessonId)
-}
+const isLessonCompleted = (lessonId) => completedLessonIds.value.includes(lessonId)
 
-const isLessonLocked = (group, index) => {
-  // Como acordamos, retornamos false para que todas estén desbloqueadas y puedas probar los juegos
-  return false
-}
+const isLessonLocked = (group, index) => false // Desbloqueado para pruebas
 
 const goToLesson = (lessonId) => {
   const lesson = allLessons.value.find((l) => l.id === lessonId)

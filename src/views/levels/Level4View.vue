@@ -132,21 +132,24 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { useLeccionesStore } from '@/stores/leccionesStore'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const leccionesStore = useLeccionesStore()
 
-// Variables reactivas
+// ===== VARIABLES =====
 const allLessons = ref([])
 const completedLessonIds = ref([])
 const cargando = ref(true)
 
-// Filtros computados
-const leccionesOpcionMultiple = computed(() => allLessons.value.filter((l) => l.tipo === 'opcion_multiple') || [])
-const leccionesCompletar = computed(() => allLessons.value.filter((l) => l.tipo === 'completar_oracion') || [])
-const leccionesMatematica = computed(() => allLessons.value.filter((l) => l.tipo === 'matematica') || [])
+// ===== COMPUTED =====
+const leccionesOpcionMultiple = computed(() => allLessons.value.filter((l) => l.tipo === 'opcion_multiple'))
+const leccionesCompletar = computed(() => allLessons.value.filter((l) => l.tipo === 'completar_oracion'))
+const leccionesMatematica = computed(() => allLessons.value.filter((l) => l.tipo === 'matematica'))
 
+// ===== CARGAR DATOS =====
 onMounted(async () => {
   await loadLevelData()
 })
@@ -154,65 +157,67 @@ onMounted(async () => {
 const loadLevelData = async () => {
   cargando.value = true
   try {
-    // LLAMADO A PINIA CON EL NIVEL 4
-    const lecciones = await leccionesStore.cargarLeccionesPorNivel(4)
-    allLessons.value = lecciones || []
+    const idNinoActual = authStore.usuarioActual?.id || 1 
+    const datos = await leccionesStore.cargarDatosNivelCompleto(4, idNinoActual)
+    
+    allLessons.value = (datos.lecciones || []).sort((a, b) => a.id - b.id)
+    completedLessonIds.value = datos.completadas || []
   } catch (error) {
     console.error('Error cargando datos del nivel 4:', error)
     allLessons.value = []
+    completedLessonIds.value = []
   } finally {
     cargando.value = false
   }
 }
 
-// Funciones de estado
-const isLessonCompleted = (lessonId) => {
-  return completedLessonIds.value.includes(lessonId)
+// ===== LÓGICA DE BLOQUEO =====
+const isLessonCompleted = (lessonId) => completedLessonIds.value.includes(lessonId)
+
+const isLessonLocked = (lessons, index) => {
+  return false // TODO: Cambiar a la lógica real cuando termines las pruebas
 }
 
-const isLessonLocked = (group, index) => {
-  return false // Desbloqueado por defecto para pruebas
-}
-
-const goToLesson = (lessonId) => {
-  const lesson = allLessons.value.find((l) => l.id === lessonId)
-  if (!lesson) return
-  
-  const routeMap = {
-    opcion_multiple: 'play-multiple',
-    completar_oracion: 'play-fill',
-    matematica: 'play-math',
-  }
-  const routeName = routeMap[lesson.tipo] || 'play-multiple'
-  router.push({ name: routeName, params: { id: lessonId } })
-}
-
-// Funciones de diseño visual (UI)
+// ===== ETIQUETAS & EMOJIS (Específico de Nivel 3 y 4) =====
 const lessonTypeLabel = (tipo) => {
-  const labels = {
+  const map = {
     opcion_multiple: 'Opción múltiple',
     completar_oracion: 'Completar oración',
-    matematica: 'Matemática',
+    matematica: 'Matemática'
   }
-  return labels[tipo] || 'Lección'
+  return map[tipo] || 'Lección'
 }
 
 const lessonBadgeClass = (tipo) => {
-  const classes = {
+  const map = {
     opcion_multiple: 'bg-warning-subtle text-warning border-warning-subtle',
     completar_oracion: 'bg-info-subtle text-info-emphasis border-info-subtle',
-    matematica: 'bg-success-subtle text-success-emphasis border-success-subtle',
+    matematica: 'bg-success-subtle text-success-emphasis border-success-subtle'
   }
-  return classes[tipo] || 'bg-secondary text-dark'
+  return map[tipo] || 'bg-secondary text-dark'
 }
 
 const getLessonEmoji = (tipo) => {
   const map = {
     opcion_multiple: '🧠',
     completar_oracion: '📝',
-    matematica: '📐',
+    matematica: '📐'
   }
   return map[tipo] || '🎯'
+}
+
+// ===== NAVEGACIÓN =====
+const goToLesson = (lessonId) => {
+  const lesson = allLessons.value.find((l) => l.id === lessonId)
+  if (!lesson?.tipo) return
+  
+  const routeMap = {
+    opcion_multiple: 'play-multiple',
+    completar_oracion: 'play-fill',
+    matematica: 'play-math'
+  }
+  const routeName = routeMap[lesson.tipo]
+  if (routeName) router.push({ name: routeName, params: { id: lessonId } })
 }
 </script>
 
