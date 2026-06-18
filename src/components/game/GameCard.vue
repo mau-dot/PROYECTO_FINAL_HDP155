@@ -49,54 +49,59 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'GameCard',
-  props: {
-    lesson: { type: Object, required: true },
-    isLocked: { type: Boolean, default: false },
-    isCompleted: { type: Boolean, default: false },
-  },
-  emits: ['select-lesson'],
-  computed: {
-    animClass() {
-      if (this.isLocked) return 'anim--locked'
-      const map = {
-        opcion_multiple: 'anim--multiple',
-        completar_oracion: 'anim--oracion',
-        matematica: 'anim--mate',
-      }
-      return map[this.lesson.tipo] || 'anim--multiple'
-    },
-    badgeClass() {
-      if (this.isLocked) return 'badge--locked'
-      const map = {
-        opcion_multiple: 'badge--multiple',
-        completar_oracion: 'badge--oracion',
-        matematica: 'badge--mate',
-      }
-      return map[this.lesson.tipo] || 'badge--multiple'
-    },
-    tipoLabel() {
-      if (this.isLocked) return 'Bloqueado'
-      const map = {
-        opcion_multiple: 'Opción múltiple',
-        completar_oracion: 'Completar oración',
-        matematica: 'Matemática',
-      }
-      return map[this.lesson.tipo] || 'Lección'
-    },
-    btnClass() {
-      if (this.isLocked) return 'btn--lock'
-      if (this.isCompleted) return 'btn--done'
-      return 'btn--play'
-    },
-  },
-  methods: {
-    handleCardClick() {
-      if (!this.isLocked) this.$emit('select-lesson', this.lesson.id)
-    },
-  },
+<script setup>
+import { computed } from 'vue'
+
+// Props
+const props = defineProps({
+  lesson:      { type: Object,  required: true },
+  isLocked:    { type: Boolean, default: false },
+  isCompleted: { type: Boolean, default: false }
+})
+
+// Emits
+const emit = defineEmits(['select-lesson'])
+
+// Computed
+const animClass = computed(() => {
+  if (props.isLocked) return 'anim--locked'
+  const map = {
+    opcion_multiple:   'anim--multiple',
+    completar_oracion: 'anim--oracion',
+    matematica:        'anim--mate'
+  }
+  return map[props.lesson.tipo] || 'anim--multiple'
+})
+
+const badgeClass = computed(() => {
+  if (props.isLocked) return 'badge--locked'
+  const map = {
+    opcion_multiple:   'badge--multiple',
+    completar_oracion: 'badge--oracion',
+    matematica:        'badge--mate'
+  }
+  return map[props.lesson.tipo] || 'badge--multiple'
+})
+
+const tipoLabel = computed(() => {
+  if (props.isLocked) return 'Bloqueado'
+  const map = {
+    opcion_multiple:   'Opción múltiple',
+    completar_oracion: 'Completar oración',
+    matematica:        'Matemática'
+  }
+  return map[props.lesson.tipo] || 'Lección'
+})
+
+const btnClass = computed(() => {
+  if (props.isLocked)    return 'btn--lock'
+  if (props.isCompleted) return 'btn--done'
+  return 'btn--play'
+})
+
+// Métodos
+const handleCardClick = () => {
+  if (!props.isLocked) emit('select-lesson', props.lesson.id)
 }
 </script>
 
