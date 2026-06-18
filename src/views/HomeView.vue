@@ -40,7 +40,7 @@
                     emoji="🚀"
                     size="lg"
                     class="btn-kid-size"
-                    @click="empezarJugar"
+                    @click="scrollANiveles"
                   />
                 </div>
               </div>
@@ -170,7 +170,7 @@
         </div>
       </section>
 
-      <section class="py-5 bg-light">
+      <section ref="seccionNiveles" class="py-5 bg-light">
         <div class="container">
           <div class="text-center mb-4 mb-lg-5">
             <span class="badge rounded-pill bg-primary-subtle text-primary fw-bold px-3 py-2 mb-3">
@@ -185,7 +185,10 @@
 
           <div class="row g-4">
             <div v-for="nivel in niveles" :key="nivel.id" class="col-md-6 col-xl-3">
-              <article class="card level-card h-100 border-0 shadow-sm">
+              <article
+                class="card level-card h-100 border-0 shadow-sm"
+                :class="{ 'admin-disabled-card': authStore.esAdmin }"
+              >
                 <div class="card-body d-flex flex-column p-4">
                   <div class="d-flex justify-content-between align-items-start mb-3">
                     <span class="badge rounded-pill px-3 py-2" :class="nivel.badgeClass">
@@ -201,11 +204,12 @@
                   <p class="text-secondary mb-4">{{ nivel.descripcion }}</p>
 
                   <BaseButton
-                    texto="Ver nivel"
+                    :texto="authStore.esAdmin ? 'No disponible' : 'Ver nivel'"
                     color="info"
                     emoji=""
                     size="sm"
                     class="mt-auto"
+                    :disabled="authStore.esAdmin"
                     @click="irALevel(nivel.ruta)"
                   />
                 </div>
@@ -221,7 +225,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import BaseButton from '@/components/common/BaseButton.vue'
@@ -230,6 +234,14 @@ import Footer from '@/components/common/Footer.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+
+const seccionNiveles = ref(null)
+
+const scrollANiveles = () => {
+  if (seccionNiveles.value) {
+    seccionNiveles.value.scrollIntoView({ behavior: 'smooth' })
+  }
+}
 
 //arary meramente para ilustracion, localmente
 const niveles = [
@@ -404,7 +416,8 @@ const irALevel = (rutaNivel) => {
   position: absolute;
   border-radius: 50%;
   z-index: 0;
-  pointer-events: none; /* No estorban si el niño hace clic */
+  pointer-events: none;
+  /* No estorban si el niño hace clic */
 }
 
 .home-page::before {
@@ -455,8 +468,19 @@ const irALevel = (rutaNivel) => {
 }
 
 .level-card:hover {
-  transform: scale(1.04) rotate(1deg); /* Se agranda un poquito y se inclina de lado */
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efecto rebote */
+  transform: scale(1.04) rotate(1deg);
+  /* Se agranda un poquito y se inclina de lado */
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.level-card:not(.admin-disabled-card):hover {
+  transform: scale(1.04) rotate(1deg);
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.admin-disabled-card {
+  opacity: 0.8;
+  cursor: not-allowed;
 }
 
 .level-chip {
@@ -543,8 +567,10 @@ const irALevel = (rutaNivel) => {
 }
 
 .btn-kid-size:hover {
-  transform: scale(1.12) rotate(-2deg); /* Se estira más y se inclina al revés */
-  filter: brightness(1.1); /* Brilla un poquito más */
+  transform: scale(1.12) rotate(-2deg);
+  /* Se estira más y se inclina al revés */
+  filter: brightness(1.1);
+  /* Brilla un poquito más */
   transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -559,9 +585,11 @@ const irALevel = (rutaNivel) => {
   100% {
     transform: translateY(0) scale(1) rotate(0deg);
   }
+
   30% {
     transform: translateY(-15px) scale(1.05) rotate(5deg);
   }
+
   60% {
     transform: translateY(0) scale(0.95) rotate(-5deg);
   }
@@ -571,9 +599,11 @@ const irALevel = (rutaNivel) => {
   0% {
     box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.5);
   }
+
   70% {
     box-shadow: 0 0 0 15px rgba(25, 135, 84, 0);
   }
+
   100% {
     box-shadow: 0 0 0 0 rgba(25, 135, 84, 0);
   }
@@ -583,9 +613,11 @@ const irALevel = (rutaNivel) => {
   0% {
     transform: rotate(0deg) scale(1);
   }
+
   50% {
     transform: rotate(180deg) scale(1.2);
   }
+
   100% {
     transform: rotate(360deg) scale(1);
   }
