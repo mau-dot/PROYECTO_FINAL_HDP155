@@ -380,13 +380,13 @@ const irALevel = (rutaNivel) => {
   const nivelObjetivo = Number(rutaNivel.replace('level', ''))
   const nivelUsuario = Number(authStore.nivelUsuario)
 
-  // Si coincide con su nivel asignado, permitir el paso; si no, redirigir a su propio nivel
-  if (nivelUsuario === nivelObjetivo) {
+  // Permitir acceso si el usuario tiene nivel >= nivel objetivo (puede acceder a niveles inferiores)
+  if (nivelUsuario >= nivelObjetivo) {
     router.push({ name: rutaNivel })
   } else {
+    // Si intenta acceder a un nivel superior al suyo, redirigir a su propio nivel
     router.push({ name: `level${nivelUsuario}` })
   }
-
 }
 </script>
 
