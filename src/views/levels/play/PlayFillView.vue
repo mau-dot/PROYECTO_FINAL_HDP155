@@ -80,99 +80,86 @@
   </div>
 </template>
 
-<script>
-import { database } from '@/database/db'
-import ProgressBar from '@/components/game/ProgressBar.vue'
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useLeccionesStore } from '@/stores/leccionesStore'
 
-export default {
-  name: 'PlayFillView',
-  components: { ProgressBar },
-  data() {
-    return {
-      leccion: null,
-      cargando: true,
-      preguntaActualIndex: 0,
-      palabraArrastrada: null,
-      palabraEnHueco: null,
-      respondida: false,
-      respuestaCorrecta: false,
-      aciertos: 0,
-      juegoTerminado: false
-    }
-  },
-  computed: {
-    porcentaje() {
-      if (!this.leccion) return 0
-      if (this.juegoTerminado) return 100
-      return Math.round(((this.preguntaActualIndex + 1) / this.leccion.contenido.length) * 100)
-    },
-    ejercicioActual() {
-      return this.leccion?.contenido[this.preguntaActualIndex]
-    },
-    esUltimo() {
-      return this.preguntaActualIndex === this.leccion.contenido.length - 1
-    },
-    partes() {
-      return (this.ejercicioActual?.oracion || '').split('___')
-    },
-    palabrasDisponibles() {
-      const arr = [
-        this.ejercicioActual?.palabraCorrecta,
-        this.ejercicioActual?.distractor
-      ]
-      return arr.sort(() => Math.random() - 0.5)
-    },
-    estadoHueco() {
-      if (!this.respondida) return this.palabraEnHueco ? 'hueco-lleno' : 'hueco-vacio'
-      return this.respuestaCorrecta ? 'hueco-correcto' : 'hueco-incorrecto'
-    }
-  },
-  async mounted() {
-    await this.cargarLeccion()
-  },
-  methods: {
-    async cargarLeccion() {
-      try {
-        const id = Number(this.$route.params.id)
-        this.leccion = await database.lecciones.get(id)
-      } catch (e) {
-        console.error('Error cargando lección:', e)
-      } finally {
-        this.cargando = false
-      }
-    },
-    arrastrar(palabra) {
-      this.palabraArrastrada = palabra
-    },
-    soltar() {
-      if (!this.palabraArrastrada) return
-      this.palabraEnHueco = this.palabraArrastrada
-      this.palabraArrastrada = null
-      this.respuestaCorrecta = this.palabraEnHueco === this.ejercicioActual.palabraCorrecta
-      if (this.respuestaCorrecta) this.aciertos++
-      this.respondida = true
-    },
-    siguiente() {
-      if (this.esUltimo) {
-        this.juegoTerminado = true
-        return
-      }
-      this.preguntaActualIndex++
-      this.palabraEnHueco = null
-      this.palabraArrastrada = null
-      this.respondida = false
-      this.respuestaCorrecta = false
-    },
-    reiniciar() {
-      this.preguntaActualIndex = 0
-      this.palabraEnHueco = null
-      this.palabraArrastrada = null
-      this.respondida = false
-      this.respuestaCorrecta = false
-      this.aciertos = 0
-      this.juegoTerminado = false
-    }
+const route = useRoute()
+const leccionesStore = useLeccionesStore()
+
+const cargando = ref(true)
+const leccion = ref(null)
+const juegoTerminado = ref(false)
+const preguntaActualIndex = ref(0)
+const palabraEnHueco = ref(null)
+const palabraArrastrada = ref(null)
+const respondida = ref(false)
+const respuestaCorrecta = ref(false)
+const aciertos = ref(0)
+
+const ejercicioActual = computed(() => leccion.value?.contenido[preguntaActualIndex.value])
+const esUltimo = computed(() => preguntaActualIndex.value === (leccion.value?.contenido.length - 1))
+const porcentaje = computed(() => leccion.value ? (preguntaActualIndex.value / leccion.value.contenido.length) * 100 : 0)
+
+const partes = computed(() => ejercicioActual.value?.oracion.split('___') || [])
+const estadoHueco = computed(() => {
+  if (!palabraEnHueco.value) return 'hueco-vacio'
+  if (!respondida.value) return 'hueco-lleno'
+  return respuestaCorrecta.value ? 'hueco-correcto' : 'hueco-incorrecto'
+})
+
+onMounted(async () => {
+  cargando.value = true
+  const id = Number(route.params.id)
+  leccion.value = await leccionesStore.obtenerLeccionPorId(id)
+  cargando.value = false
+})
+
+const onDragStart = (palabra, event) => {
+  if (respondida.value) return
+  palabraArrastrada.value = palabra
+  event.dataTransfer.effectAllowed = 'move'
+}
+
+const onDrop = () => {
+  if (respondida.value || !palabraArrastrada.value) return
+  palabraEnHueco.value = palabraArrastrada.value
+  palabraArrastrada.value = null
+}
+
+const quitarPalabra = () => {
+  if (respondida.value) return
+  palabraEnHueco.value = null
+}
+
+const verificar = () => {
+  if (!palabraEnHueco.value) return
+  respuestaCorrecta.value = palabraEnHueco.value === ejercicioActual.value.palabraCorrecta
+  if (respuestaCorrecta.value) aciertos.value++
+  respondida.value = true
+}
+
+const siguiente = () => {
+  if (esUltimo.value) {
+    juegoTerminado.value = true
+    return
   }
+  preguntaActualIndex.value++
+  palabraEnHueco.value = null
+  palabraArrastrada.value = null
+  respondida.value = false
+  respuestaCorrecta.value = false
+}
+
+const reiniciar = () => {
+  preguntaActualIndex.value = 0
+  palabraEnHueco.value = null
+  palabraArrastrada.value = null
+  respondida.value = false
+  respuestaCorrecta.value = false
+  aciertos.value = 0
+  juegoTerminado.value = false
 }
 </script>
 

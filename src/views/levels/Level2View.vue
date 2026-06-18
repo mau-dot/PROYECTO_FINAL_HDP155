@@ -1,39 +1,37 @@
 <template>
   <div class="level-page">
     <div class="container py-4">
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+      <div class="mb-3">
         <button
           class="btn btn-outline-secondary btn-sm fw-bold"
           @click="$router.push({ name: 'home' })"
         >
           ← Regresar al inicio
         </button>
-        <span class="badge rounded-pill bg-warning text-dark fw-bold px-3 py-2">Nivel 2</span>
       </div>
 
       <section class="hero-section p-4 p-lg-5 rounded-5 shadow-sm mb-5">
         <div class="row align-items-center gy-4">
           <div class="col-lg-7">
             <span class="badge rounded-pill bg-info-subtle text-info-emphasis px-3 py-2 mb-3">
-              🦁 Aventureros Valientes
+              🚀 Pequeños Genios (Nivel 2)
             </span>
-            <h1 class="display-5 fw-bold mb-3 text-primary">🚀 ¡Pequeños Aventureros!</h1>
+            <h1 class="display-5 fw-bold mb-3 text-primary">🎨 ¡Mi Mundo de Aprendizaje!</h1>
             <p class="lead text-secondary mb-4">
-              Actividades pensadas para 3-4 años: letras, números y descubrimientos. Completa cada
-              actividad para desbloquear la siguiente.
+              Explora tus lecciones creadas y continúa tu camino de juego. Completa cada actividad
+              para desbloquear la siguiente.
             </p>
-
             <div class="row row-cols-1 row-cols-sm-3 g-3">
               <div class="col">
                 <div class="stat-card p-3 rounded-4 bg-white border shadow-sm h-100">
                   <span class="d-block text-uppercase text-muted small mb-2">Lecciones</span>
-                  <strong class="fs-3">{{ allLessons.length }}</strong>
+                  <strong class="fs-3">{{ allLessons?.length || 0 }}</strong>
                 </div>
               </div>
               <div class="col">
                 <div class="stat-card p-3 rounded-4 bg-white border shadow-sm h-100">
                   <span class="d-block text-uppercase text-muted small mb-2">Completadas</span>
-                  <strong class="fs-3">{{ completedLessonIds.length }}</strong>
+                  <strong class="fs-3">{{ completedLessonIds?.length || 0 }}</strong>
                 </div>
               </div>
               <div class="col">
@@ -50,32 +48,31 @@
               <div class="d-flex align-items-center justify-content-between mb-4">
                 <div>
                   <p class="text-uppercase text-muted fw-semibold mb-1">Menú de lecciones</p>
-                  <h2 class="h4 fw-bold mb-0">Actividades para 3-4 años</h2>
+                  <h2 class="h4 fw-bold mb-0">Tus lecciones creadas</h2>
                 </div>
                 <span class="badge bg-success rounded-pill px-3 py-2">Jugar</span>
               </div>
-
               <p class="text-secondary mb-4">
-                Ejercicios cortos y coloridos que fomentan la curiosidad y las primeras letras.
+                Selecciona una lección para continuar. Si el contenido no aparece, significa que el
+                administrador aún no ha creado material para este nivel.
               </p>
-
               <div class="d-flex flex-column gap-3">
                 <div class="menu-chip bg-warning-subtle border border-warning-subtle rounded-4 p-3">
-                  <div class="fw-bold">Juegos de colores</div>
+                  <div class="fw-bold">Opción múltiple</div>
                   <div class="small text-secondary">
-                    {{ leccionesOpcionMultiple.length }} disponible(s)
+                    {{ leccionesOpcionMultiple?.length || 0 }} disponible(s)
                   </div>
                 </div>
                 <div class="menu-chip bg-info-subtle border border-info-subtle rounded-4 p-3">
-                  <div class="fw-bold">Palabras cortas</div>
+                  <div class="fw-bold">Completar oración</div>
                   <div class="small text-secondary">
-                    {{ leccionesCompletar.length }} disponible(s)
+                    {{ leccionesCompletar?.length || 0 }} disponible(s)
                   </div>
                 </div>
                 <div class="menu-chip bg-success-subtle border border-success-subtle rounded-4 p-3">
-                  <div class="fw-bold">Números básicos</div>
+                  <div class="fw-bold">Matemática</div>
                   <div class="small text-secondary">
-                    {{ leccionesMatematica.length }} disponible(s)
+                    {{ leccionesMatematica?.length || 0 }} disponible(s)
                   </div>
                 </div>
               </div>
@@ -85,11 +82,11 @@
       </section>
 
       <div v-if="cargando" class="text-center py-5">
-        <div class="spinner-border text-success" role="status"></div>
-        <p class="mt-2 text-muted">Cargando aventuras...</p>
+        <div class="spinner-border text-warning" role="status"></div>
+        <p class="mt-2 text-muted">Cargando lecciones...</p>
       </div>
 
-      <div v-else-if="allLessons.length === 0" class="text-center py-5">
+      <div v-else-if="!allLessons || allLessons.length === 0" class="text-center py-5">
         <p class="fs-4 text-muted">😴 Aún no hay lecciones para este nivel.</p>
         <p class="text-muted small">
           El administrador todavía no ha creado contenido para Nivel 2.
@@ -100,9 +97,9 @@
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
           <div>
             <span class="badge rounded-pill bg-primary-subtle text-primary fw-bold px-3 py-2 mb-2">
-              Menú de Aventuras
+              Menú de Actividades
             </span>
-            <h2 class="fw-bold mb-1">Misiones Disponibles</h2>
+            <h2 class="fw-bold mb-1">Lecciones creadas</h2>
             <p class="text-secondary mb-0">Selecciona una tarjeta para iniciar cada actividad.</p>
           </div>
         </div>
@@ -113,52 +110,82 @@
             :key="lesson.id"
             class="col-12 col-md-6 col-xl-4"
           >
-            <article
-              class="card level-card h-100 border-0 shadow-sm lesson-card"
-              :class="{ 'lesson-locked': isLessonLocked(allLessons, index) }"
-              :style="isLessonLocked(allLessons, index) ? 'opacity: 0.65;' : ''"
+            <div
+              class="gcard"
+              :class="{ 'gcard--locked': isLessonLocked(allLessons, index) }"
+              @click="!isLessonLocked(allLessons, index) && irAJugar(lesson)"
             >
-              <div class="card-body d-flex flex-column h-100">
-                <div class="lesson-visual mb-3">
-                  {{ isLessonLocked(allLessons, index) ? '🔒' : getLessonEmoji(lesson.tipo) }}
-                </div>
+              <div
+                class="gcard__anim"
+                :class="isLessonLocked(allLessons, index) ? 'anim--locked' : 'anim--' + lesson.tipo"
+              >
+                <template
+                  v-if="lesson.tipo === 'opcion_multiple' && !isLessonLocked(allLessons, index)"
+                >
+                  <div class="bubble b1"></div>
+                  <div class="bubble b2"></div>
+                  <div class="bubble b3"></div>
+                  <i class="ti ti-bulb main-icon icon-green" aria-hidden="true"></i>
+                </template>
 
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                  <span class="badge rounded-pill px-3 py-2" :class="lessonBadgeClass(lesson.tipo)">
-                    {{ lessonTypeLabel(lesson.tipo) }}
-                  </span>
-                  <span class="level-chip">{{ index + 1 }}</span>
-                </div>
+                <template
+                  v-else-if="
+                    lesson.tipo === 'completar_oracion' && !isLessonLocked(allLessons, index)
+                  "
+                >
+                  <span class="star s1">✦</span>
+                  <span class="star s2">✦</span>
+                  <span class="star s3">✦</span>
+                  <i class="ti ti-puzzle main-icon icon-blue" aria-hidden="true"></i>
+                </template>
 
-                <h3 class="h5 fw-bold mb-2">{{ lesson.titulo }}</h3>
-                <p class="text-secondary mb-4">
-                  {{ lesson.descripcion || 'Lección educativa divertida.' }}
+                <template
+                  v-else-if="lesson.tipo === 'matematica' && !isLessonLocked(allLessons, index)"
+                >
+                  <span class="num n1">3</span>
+                  <span class="num n2">+</span>
+                  <span class="num n3">5</span>
+                  <i class="ti ti-math-function main-icon icon-amber" aria-hidden="true"></i>
+                </template>
+
+                <template v-else>
+                  <i class="ti ti-lock lock-icon" aria-hidden="true"></i>
+                </template>
+              </div>
+
+              <div class="gcard__body">
+                <span
+                  class="gcard__badge"
+                  :class="
+                    isLessonLocked(allLessons, index) ? 'badge--locked' : 'badge--' + lesson.tipo
+                  "
+                >
+                  {{
+                    isLessonLocked(allLessons, index) ? 'Bloqueado' : lessonTypeLabel(lesson.tipo)
+                  }}
+                </span>
+                <p class="gcard__title">{{ lesson.titulo }}</p>
+                <p class="gcard__desc">
+                  {{ lesson.descripcion || '¡Vamos a aprender y divertirnos juntos!' }}
                 </p>
 
-                <div class="mt-auto w-100">
-                  <div
-                    v-if="isLessonCompleted(lesson.id)"
-                    class="text-success small fw-bold mb-2 text-center"
-                  >
-                    ✨ ¡Completada!
-                  </div>
-                  <div
-                    v-else-if="isLessonLocked(allLessons, index)"
-                    class="text-muted small fw-bold mb-2 text-center"
-                  >
-                    Supera el reto anterior para abrir esta misión
-                  </div>
-
-                  <button
-                    class="btn btn-play w-100 btn-sm mt-auto"
-                    :disabled="isLessonLocked(allLessons, index)"
-                    @click="goToLesson(lesson.id)"
-                  >
-                    {{ isLessonCompleted(lesson.id) ? 'Volver a jugar' : '▶ ¡Iniciar Misión!' }}
-                  </button>
-                </div>
+                <button
+                  class="gcard__btn"
+                  :class="
+                    isLessonLocked(allLessons, index)
+                      ? 'btn--lock'
+                      : isLessonCompleted(lesson.id)
+                        ? 'btn--done'
+                        : 'btn--play'
+                  "
+                  :disabled="isLessonLocked(allLessons, index)"
+                >
+                  <span v-if="isLessonLocked(allLessons, index)">Bloqueado 🔒</span>
+                  <span v-else-if="isLessonCompleted(lesson.id)">⭐ Repetir</span>
+                  <span v-else>Jugar</span>
+                </button>
               </div>
-            </article>
+            </div>
           </div>
         </div>
       </section>
@@ -166,99 +193,69 @@
   </div>
 </template>
 
-<script>
-import { database } from '@/database/db'
+<script setup>
+import { ref, computed, onMounted } from 'vue' 
+import { useLeccionesStore } from '@/stores/leccionesStore'
+import { useRouter } from 'vue-router'
 
-export default {
-  name: 'Level2View',
-  data() {
-    return {
-      allLessons: [],
-      completedLessonIds: [],
-      currentChildId: 1,
-      cargando: true,
-    }
-  },
-  computed: {
-    leccionesOpcionMultiple() {
-      return this.allLessons.filter((l) => l.tipo === 'opcion_multiple').sort((a, b) => a.id - b.id)
-    },
-    leccionesCompletar() {
-      return this.allLessons
-        .filter((l) => l.tipo === 'completar_oracion')
-        .sort((a, b) => a.id - b.id)
-    },
-    leccionesMatematica() {
-      return this.allLessons.filter((l) => l.tipo === 'matematica').sort((a, b) => a.id - b.id)
-    },
-  },
-  async mounted() {
-    await this.loadLevelData()
-  },
-  methods: {
-    async loadLevelData() {
-      try {
-        this.cargando = true
-        // Para asegurar una secuencia ordenada impecable, usamos sortBy('id')
-        this.allLessons = await database.lecciones.where('nivel').equals(2).sortBy('id')
+const router = useRouter()
+const leccionesStore = useLeccionesStore()
 
-        const progressRecords = await database.progress
-          .where('usuarioId')
-          .equals(this.currentChildId)
-          .toArray()
-        this.completedLessonIds = progressRecords
-          .filter((p) => p.esCompletado)
-          .map((p) => p.leccionId)
-      } catch (error) {
-        console.error('Error cargando datos del nivel 2:', error)
-      } finally {
-        this.cargando = false
-      }
-    },
-    isLessonCompleted(lessonId) {
-      return this.completedLessonIds.includes(lessonId)
-    },
-    isLessonLocked(group, index) {
-      if (index === 0) return false
-      const previousLesson = group[index - 1]
-      return !this.isLessonCompleted(previousLesson.id)
-    },
-    goToLesson(lessonId) {
-      const lesson = this.allLessons.find((l) => l.id === lessonId)
-      if (!lesson) return
-      const routeMap = {
-        opcion_multiple: 'play-multiple',
-        completar_oracion: 'play-fill',
-        matematica: 'play-math',
-      }
-      const routeName = routeMap[lesson.tipo] || 'play-multiple'
-      this.$router.push({ name: routeName, params: { id: lessonId } })
-    },
-    lessonTypeLabel(tipo) {
-      const labels = {
-        opcion_multiple: 'Opción múltiple',
-        completar_oracion: 'Completar oración',
-        matematica: 'Matemática',
-      }
-      return labels[tipo] || 'Lección'
-    },
-    lessonBadgeClass(tipo) {
-      const classes = {
-        opcion_multiple: 'bg-warning-subtle text-warning border-warning-subtle',
-        completar_oracion: 'bg-info-subtle text-info-emphasis border-info-subtle',
-        matematica: 'bg-success-subtle text-success-emphasis border-success-subtle',
-      }
-      return classes[tipo] || 'bg-secondary text-dark'
-    },
-    getLessonEmoji(tipo) {
-      const map = {
-        opcion_multiple: '🧩',
-        completar_oracion: '✍️',
-        matematica: '➕',
-      }
-      return map[tipo] || '🎯'
-    },
-  },
+// Variables reactivas principales
+const allLessons = ref([])
+const cargando = ref(true)
+
+const completedLessonIds = ref([]) 
+
+// Filtros calculados para los chips de la derecha
+const leccionesOpcionMultiple = computed(() => allLessons.value.filter(l => l.tipo === 'opcion_multiple') || [])
+const leccionesCompletar = computed(() => allLessons.value.filter(l => l.tipo === 'completar_oracion') || [])
+const leccionesMatematica = computed(() => allLessons.value.filter(l => l.tipo === 'matematica') || [])
+
+onMounted(async () => {
+  await inicializarNivel()
+})
+
+const inicializarNivel = async () => {
+  cargando.value = true
+  try {
+    // AQUI ESTA LA MAGIA: Pasamos el parámetro 2 para que traiga las de Nivel 2
+    const lecciones = await leccionesStore.cargarLeccionesPorNivel(2)
+    allLessons.value = lecciones || []
+  } catch (error) {
+    console.error("Error al cargar lecciones:", error)
+    allLessons.value = []
+  } finally {
+    cargando.value = false
+  }
+}
+
+const isLessonLocked = (lessons, index) => {
+  return false
+}
+
+const isLessonCompleted = (id) => {
+  return completedLessonIds.value.includes(id)
+}
+
+const lessonTypeLabel = (tipo) => {
+  if (tipo === 'opcion_multiple') return 'Opción Múltiple'
+  if (tipo === 'completar_oracion') return 'Completar Oración'
+  if (tipo === 'matematica') return 'Matemáticas'
+  return 'Actividad'
+}
+
+// Función principal para navegar
+const irAJugar = (leccion) => {
+  if (!leccion || !leccion.tipo) return
+
+  if (leccion.tipo === 'opcion_multiple') {
+    router.push({ name: 'play-multiple', params: { id: leccion.id } })
+  } else if (leccion.tipo === 'matematica') {
+    router.push({ name: 'play-math', params: { id: leccion.id } })
+  } else if (leccion.tipo === 'completar_oracion') {
+    router.push({ name: 'play-fill', params: { id: leccion.id } })
+  }
 }
 </script>
 
