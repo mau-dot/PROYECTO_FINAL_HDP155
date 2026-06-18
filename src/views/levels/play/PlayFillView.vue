@@ -90,12 +90,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useLeccionesStore } from '@/stores/leccionesStore'  // ✅ usa el store (igual que los otros Play)
+import { useLeccionesStore } from '@/stores/leccionesStore'  
 import ProgressBar from '@/components/game/ProgressBar.vue'
 
 const route = useRoute()
-const leccionesStore = useLeccionesStore()  // ✅ instancia del store
-
+const leccionesStore = useLeccionesStore()  // 
 // ===== VARIABLES =====
 const cargando = ref(true)
 const leccion = ref(null)
@@ -106,7 +105,7 @@ const palabraArrastrada = ref(null)
 const respondida = ref(false)
 const respuestaCorrecta = ref(false)
 const aciertos = ref(0)
-const errores = ref(0)  // ✅ ya existía, ahora sí se pasa al guardar
+const errores = ref(0)  
 
 // ===== COMPUTED =====
 const ejercicioActual = computed(() => leccion.value?.contenido[preguntaActualIndex.value])
@@ -136,7 +135,7 @@ const estadoHueco = computed(() => {
 onMounted(async () => {
   try {
     const id = Number(route.params.id)
-    // ✅ usa el store igual que PlayMathView y PlayMultipleView
+    
     leccion.value = await leccionesStore.obtenerLeccionPorId(id)
   } catch (e) {
     console.error('Error cargando lección:', e)

@@ -194,71 +194,76 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue' 
-import { useLeccionesStore } from '@/stores/leccionesStore'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { useLeccionesStore } from '@/stores/leccionesStore'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const leccionesStore = useLeccionesStore()
 
-// Variables reactivas principales
+// ===== VARIABLES =====
 const allLessons = ref([])
 const cargando = ref(true)
+const completedLessonIds = ref([])
 
-const completedLessonIds = ref([]) 
+// ===== COMPUTED =====
+const leccionesOpcionMultiple = computed(() => allLessons.value.filter((l) => l.tipo === 'opcion_multiple'))
+const leccionesCompletar = computed(() => allLessons.value.filter((l) => l.tipo === 'completar_oracion'))
+const leccionesMatematica = computed(() => allLessons.value.filter((l) => l.tipo === 'matematica'))
 
-// Filtros calculados para los chips de la derecha
-const leccionesOpcionMultiple = computed(() => allLessons.value.filter(l => l.tipo === 'opcion_multiple') || [])
-const leccionesCompletar = computed(() => allLessons.value.filter(l => l.tipo === 'completar_oracion') || [])
-const leccionesMatematica = computed(() => allLessons.value.filter(l => l.tipo === 'matematica') || [])
-
+// ===== CARGAR DATOS =====
 onMounted(async () => {
-  await inicializarNivel()
+  await loadLevelData()
 })
 
-const inicializarNivel = async () => {
+const loadLevelData = async () => {
   cargando.value = true
   try {
-    // AQUI ESTA LA MAGIA: Pasamos el parámetro 2 para que traiga las de Nivel 2
-    const lecciones = await leccionesStore.cargarLeccionesPorNivel(2)
-    allLessons.value = lecciones || []
+    const idNinoActual = authStore.usuarioActual?.id || 1 
+    const datos = await leccionesStore.cargarDatosNivelCompleto(2, idNinoActual)
+    
+    allLessons.value = (datos.lecciones || []).sort((a, b) => a.id - b.id)
+    completedLessonIds.value = datos.completadas || []
   } catch (error) {
-    console.error("Error al cargar lecciones:", error)
+    console.error('Error cargando datos del nivel 2:', error)
     allLessons.value = []
+    completedLessonIds.value = []
   } finally {
     cargando.value = false
   }
 }
 
+// ===== LÓGICA DE BLOQUEO =====
+const isLessonCompleted = (lessonId) => completedLessonIds.value.includes(lessonId)
+
 const isLessonLocked = (lessons, index) => {
-  return false
+  return false // TODO: Cambiar a la lógica real cuando termines las pruebas
 }
 
-const isLessonCompleted = (id) => {
-  return completedLessonIds.value.includes(id)
-}
-
+// ===== ETIQUETAS =====
 const lessonTypeLabel = (tipo) => {
-  if (tipo === 'opcion_multiple') return 'Opción Múltiple'
-  if (tipo === 'completar_oracion') return 'Completar Oración'
-  if (tipo === 'matematica') return 'Matemáticas'
-  return 'Actividad'
+  const map = {
+    opcion_multiple: 'Opción Múltiple',
+    completar_oracion: 'Completar Oración',
+    matematica: 'Matemáticas'
+  }
+  return map[tipo] || 'Actividad'
 }
 
-// Función principal para navegar
+// ===== NAVEGACIÓN =====
 const irAJugar = (leccion) => {
-  if (!leccion || !leccion.tipo) return
-
-  if (leccion.tipo === 'opcion_multiple') {
-    router.push({ name: 'play-multiple', params: { id: leccion.id } })
-  } else if (leccion.tipo === 'matematica') {
-    router.push({ name: 'play-math', params: { id: leccion.id } })
-  } else if (leccion.tipo === 'completar_oracion') {
-    router.push({ name: 'play-fill', params: { id: leccion.id } })
+  if (!leccion?.tipo) return
+  const routeMap = {
+    opcion_multiple: 'play-multiple',
+    completar_oracion: 'play-fill',
+    matematica: 'play-math'
   }
+  const routeName = routeMap[leccion.tipo]
+  if (routeName) router.push({ name: routeName, params: { id: leccion.id } })
 }
 </script>
-
 <style scoped>
 /* Base de la página con transiciones suaves y fondos lúdicos pero refinados */
 .level-page {
@@ -447,37 +452,278 @@ const irAJugar = (leccion) => {
   border-color: rgba(34, 197, 94, 0.28) !important;
 }
 
-/* Controladores de Animaciones por Keyframes */
-@keyframes float-slow {
-  0%,
-  100% {
-    transform: translateY(0px) scale(1);
-  }
-  50% {
-    transform: translateY(-15px) scale(1.02);
-  }
+/* --- ESTILOS DE LAS GAMECARDS --- */
+.gcard {
+  background: #ffffff;
+  border: 0.5px solid #e0e0e0;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s;
+  height: 100%;
+}
+.gcard:hover:not(.gcard--locked) {
+  transform: translateY(-5px);
+}
+.gcard--locked {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
-@keyframes jiggle-slow {
+.gcard__anim {
+  height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.anim--opcion_multiple {
+  background: #eaf3de;
+}
+.anim--completar_oracion {
+  background: #e6f1fb;
+}
+.anim--matematica {
+  background: #faeeda;
+}
+.anim--locked {
+  background: #f5f5f5;
+}
+
+.main-icon {
+  font-size: 54px;
+  z-index: 2;
+  position: relative;
+  animation: pop 2s ease-in-out infinite;
+}
+.icon-green {
+  color: #3b6d11;
+}
+.icon-blue {
+  color: #185fa5;
+}
+.icon-amber {
+  color: #854f0b;
+}
+.lock-icon {
+  font-size: 38px;
+  color: #aaa;
+  opacity: 0.5;
+}
+
+/* Burbujas */
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.3;
+  animation: floatCard 3s ease-in-out infinite;
+}
+.b1 {
+  width: 40px;
+  height: 40px;
+  background: #639922;
+  top: 10px;
+  left: 15px;
+  animation-delay: 0s;
+}
+.b2 {
+  width: 25px;
+  height: 25px;
+  background: #97c459;
+  top: 65px;
+  left: 60px;
+  animation-delay: 0.8s;
+}
+.b3 {
+  width: 30px;
+  height: 30px;
+  background: #3b6d11;
+  top: 18px;
+  right: 20px;
+  animation-delay: 1.4s;
+}
+
+/* Estrellas */
+.star {
+  position: absolute;
+  opacity: 0.45;
+  animation: twinkle 2s ease-in-out infinite;
+  font-size: 20px;
+  color: #185fa5;
+}
+.s1 {
+  top: 12px;
+  left: 22px;
+  animation-delay: 0s;
+}
+.s2 {
+  top: 55px;
+  left: 58px;
+  animation-delay: 0.6s;
+}
+.s3 {
+  top: 15px;
+  right: 26px;
+  animation-delay: 1.2s;
+}
+
+/* Números */
+.num {
+  position: absolute;
+  font-size: 26px;
+  font-weight: 500;
+  color: #ba7517;
+  animation: bounceCard 1.5s ease-in-out infinite;
+}
+.n1 {
+  top: 18px;
+  left: 22px;
+  animation-delay: 0s;
+}
+.n2 {
+  top: 60px;
+  left: 65px;
+  animation-delay: 0.5s;
+}
+.n3 {
+  top: 18px;
+  right: 28px;
+  animation-delay: 1s;
+}
+
+.gcard__body {
+  padding: 12px 14px 16px;
+}
+.gcard__badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 9px;
+  border-radius: 999px;
+  margin-bottom: 7px;
+}
+.badge--opcion_multiple {
+  background: #eaf3de;
+  color: #3b6d11;
+}
+.badge--completar_oracion {
+  background: #e6f1fb;
+  color: #185fa5;
+}
+.badge--matematica {
+  background: #faeeda;
+  color: #854f0b;
+}
+.badge--locked {
+  background: #f0f0f0;
+  color: #999;
+}
+
+.gcard__title {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 4px;
+  line-height: 1.4;
+  color: #222;
+}
+.gcard__desc {
+  font-size: 12px;
+  color: #888;
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+.gcard__btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn--play {
+  background: #639922;
+  color: #eaf3de;
+}
+.btn--done {
+  background: #e6f1fb;
+  color: #185fa5;
+  border: 0.5px solid #185fa5;
+}
+.btn--lock {
+  background: #f0f0f0;
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+/* --- CORE KEYFRAMES --- */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+@keyframes jiggle {
   0%,
   100% {
     transform: rotate(0deg);
   }
   25% {
-    transform: rotate(1deg);
+    transform: rotate(2deg);
   }
   75% {
-    transform: rotate(-1deg);
+    transform: rotate(-2deg);
   }
 }
-
-@keyframes bounce-slow {
+@keyframes bounce {
   0%,
   100% {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-8px);
+    transform: translateY(-10px);
+  }
+}
+@keyframes floatCard {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.3);
+  }
+}
+@keyframes bounceCard {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+@keyframes pop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
   }
 }
 

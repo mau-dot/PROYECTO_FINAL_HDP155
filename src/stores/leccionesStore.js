@@ -144,6 +144,42 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     }
   }
 
+  // ===== FUNCIONES MAESTRAS PARA LAS VISTAS DE NIVEL =====
+
+  // Esta función obtiene TODAS las lecciones de un nivel y averigua cuáles ya completó el niño
+  const cargarDatosNivelCompleto = async (nivelRequerido, usuarioId) => {
+    try {
+      cargando.value = true
+      
+      // 1. Buscamos todas las lecciones correspondientes a este nivel
+      const lecciones = await database.lecciones
+        .where({ nivel: Number(nivelRequerido) })
+        .toArray()
+      
+      // 2. Buscamos el progreso de este niño en particular
+      const progreso = await database.progress
+        .where('usuarioId')
+        .equals(Number(usuarioId))
+        .toArray()
+        
+      // 3. Filtramos solo los IDs de las lecciones que ya completó
+      const completadas = progreso
+        .filter((p) => p.esCompletado)
+        .map((p) => p.leccionId)
+
+      // Retornamos ambas cosas empaquetadas de forma limpia
+      return {
+        lecciones: lecciones || [],
+        completadas: completadas || []
+      }
+    } catch (error) {
+      console.error(`Error cargando los datos maestros del nivel ${nivelRequerido}:`, error)
+      return { lecciones: [], completadas: [] }
+    } finally {
+      cargando.value = false
+    }
+  }
+
   const obtenerLeccionPorId = async (idLeccion) => {
     try {
       cargando.value = true
@@ -219,8 +255,9 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     guardarLeccion,
     eliminarLeccion,
     cargarLeccionesPorNivel,
+    cargarDatosNivelCompleto,
     obtenerLeccionPorId,
-    guardarProgreso,   // ✅ exportado para los Play views
+    guardarProgreso,  
     limpiarMensajes
   }
 })

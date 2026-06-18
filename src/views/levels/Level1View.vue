@@ -202,11 +202,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { database } from '@/database/db'
 import { useAuthStore } from '@/stores/auth'
+import { useLeccionesStore } from '@/stores/leccionesStore'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const leccionesStore = useLeccionesStore()
 
 // ===== VARIABLES =====
 const allLessons = ref([])
@@ -214,70 +215,50 @@ const cargando = ref(true)
 const completedLessonIds = ref([])
 
 // ===== COMPUTED =====
-const leccionesOpcionMultiple = computed(() =>
-  allLessons.value.filter(l => l.tipo === 'opcion_multiple')
-)
-const leccionesCompletar = computed(() =>
-  allLessons.value.filter(l => l.tipo === 'completar_oracion')
-)
-const leccionesMatematica = computed(() =>
-  allLessons.value.filter(l => l.tipo === 'matematica')
-)
+const leccionesOpcionMultiple = computed(() => allLessons.value.filter(l => l.tipo === 'opcion_multiple'))
+const leccionesCompletar = computed(() => allLessons.value.filter(l => l.tipo === 'completar_oracion'))
+const leccionesMatematica = computed(() => allLessons.value.filter(l => l.tipo === 'matematica'))
 
 // ===== CARGAR DATOS =====
 onMounted(async () => {
-  await inicializarNivel()
+  await loadLevelData()
 })
 
-const inicializarNivel = async () => {
+const loadLevelData = async () => {
   cargando.value = true
   try {
-    // 1. Cargar lecciones del nivel 1 directo de Dexie
-    allLessons.value = await database.lecciones
-      .where('nivel')
-      .equals(1)
-      .toArray()
-
-    // 2. Cargar progreso del niño en sesión
-    const usuarioId = authStore.usuarioActual?.id
-    if (usuarioId) {
-      const progressRecords = await database.progress
-        .where('usuarioId')
-        .equals(usuarioId)
-        .toArray()
-
-      // ✅ Solo completada si tuvo 0 errores (100% aciertos)
-      completedLessonIds.value = progressRecords
-        .filter(p => p.esCompletado && p.errores === 0)
-        .map(p => p.leccionId)
-    }
+    const idNinoActual = authStore.usuarioActual?.id || 1 
+    const datos = await leccionesStore.cargarDatosNivelCompleto(1, idNinoActual)
+    
+    allLessons.value = (datos.lecciones || []).sort((a, b) => a.id - b.id)
+    completedLessonIds.value = datos.completadas || []
   } catch (error) {
-    console.error('Error al cargar lecciones:', error)
+    console.error('Error cargando datos del nivel 1:', error)
     allLessons.value = []
+    completedLessonIds.value = []
   } finally {
     cargando.value = false
   }
 }
 
 // ===== LÓGICA DE BLOQUEO =====
-const isLessonCompleted = (lessonId) => {
-  return completedLessonIds.value.includes(lessonId)
-}
+const isLessonCompleted = (lessonId) => completedLessonIds.value.includes(lessonId)
 
 const isLessonLocked = (lessons, index) => {
-  // Primera lección siempre desbloqueada
+  return false // TODO: Cambiar a la lógica real cuando termines las pruebas
+  /* Lógica Real:
   if (index === 0) return false
-  // Las demás requieren que la anterior esté completada al 100%
   const leccionAnterior = lessons[index - 1]
   return !isLessonCompleted(leccionAnterior.id)
+  */
 }
 
 // ===== ETIQUETAS =====
 const lessonTypeLabel = (tipo) => {
   const map = {
-    opcion_multiple:   'Opción múltiple',
+    opcion_multiple: 'Opción múltiple',
     completar_oracion: 'Completar oración',
-    matematica:        'Matemática'
+    matematica: 'Matemática'
   }
   return map[tipo] || 'Actividad'
 }
@@ -285,17 +266,13 @@ const lessonTypeLabel = (tipo) => {
 // ===== NAVEGACIÓN =====
 const irAJugar = (leccion) => {
   if (!leccion?.tipo) return
-
   const routeMap = {
-    opcion_multiple:   'play-multiple',
+    opcion_multiple: 'play-multiple',
     completar_oracion: 'play-fill',
-    matematica:        'play-math'
+    matematica: 'play-math'
   }
-
   const routeName = routeMap[leccion.tipo]
-  if (routeName) {
-    router.push({ name: routeName, params: { id: leccion.id } })
-  }
+  if (routeName) router.push({ name: routeName, params: { id: leccion.id } })
 }
 </script>
 
