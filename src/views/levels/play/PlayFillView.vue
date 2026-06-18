@@ -71,6 +71,13 @@
           Completaste bien <strong>{{ aciertos }}</strong> de
           <strong>{{ leccion.contenido.length }}</strong> ejercicios.
         </p>
+        <!-- ✅ Mensaje extra si fue perfecta -->
+        <p v-if="errores === 0" class="text-success fw-bold">
+          ¡Sin errores! 🌟 La siguiente lección está desbloqueada.
+        </p>
+        <p v-else class="text-warning fw-bold">
+          Tuviste {{ errores }} error(es). ¡Inténtalo de nuevo para desbloquear la siguiente!
+        </p>
         <div class="d-flex gap-3 justify-content-center mt-3">
           <button class="btn btn-outline-secondary fw-bold" @click="reiniciar">Intentar de nuevo</button>
           <button class="btn btn-primary fw-bold" @click="$router.go(-1)">Volver al nivel</button>
@@ -83,12 +90,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { database } from '@/database/db'
-import { useAuthStore } from '@/stores/auth'
+import { useLeccionesStore } from '@/stores/leccionesStore'  // ✅ usa el store (igual que los otros Play)
 import ProgressBar from '@/components/game/ProgressBar.vue'
 
 const route = useRoute()
-const authStore = useAuthStore()
+const leccionesStore = useLeccionesStore()  // ✅ instancia del store
 
 // ===== VARIABLES =====
 const cargando = ref(true)
@@ -100,22 +106,18 @@ const palabraArrastrada = ref(null)
 const respondida = ref(false)
 const respuestaCorrecta = ref(false)
 const aciertos = ref(0)
-const errores = ref(0)
+const errores = ref(0)  // ✅ ya existía, ahora sí se pasa al guardar
 
 // ===== COMPUTED =====
 const ejercicioActual = computed(() => leccion.value?.contenido[preguntaActualIndex.value])
-
 const esUltimo = computed(() => preguntaActualIndex.value === (leccion.value?.contenido.length - 1))
-
 const porcentaje = computed(() => {
   if (!leccion.value) return 0
   if (juegoTerminado.value) return 100
   return Math.round(((preguntaActualIndex.value + 1) / leccion.value.contenido.length) * 100)
 })
-
 const partes = computed(() => ejercicioActual.value?.oracion.split('___') || ['', ''])
 
-// ✅ Genera las palabras para arrastrar (correcta + distractor mezclados)
 const palabrasDisponibles = computed(() => {
   if (!ejercicioActual.value) return []
   const arr = [
@@ -134,7 +136,8 @@ const estadoHueco = computed(() => {
 onMounted(async () => {
   try {
     const id = Number(route.params.id)
-    leccion.value = await database.lecciones.get(id)
+    // ✅ usa el store igual que PlayMathView y PlayMultipleView
+    leccion.value = await leccionesStore.obtenerLeccionPorId(id)
   } catch (e) {
     console.error('Error cargando lección:', e)
   } finally {
@@ -143,12 +146,10 @@ onMounted(async () => {
 })
 
 // ===== MÉTODOS =====
-// ✅ Nombre que coincide con @dragstart="arrastrar(palabra)" en el template
 const arrastrar = (palabra) => {
   palabraArrastrada.value = palabra
 }
 
-// ✅ Nombre que coincide con @drop="soltar" en el template
 const soltar = () => {
   if (!palabraArrastrada.value) return
   palabraEnHueco.value = palabraArrastrada.value
@@ -165,7 +166,8 @@ const soltar = () => {
 const siguiente = async () => {
   if (esUltimo.value) {
     juegoTerminado.value = true
-    await guardarProgreso()
+    // ✅ usa guardarProgreso del store, igual que los otros dos Play
+    await leccionesStore.guardarProgreso(leccion.value, aciertos.value, errores.value)
     return
   }
   preguntaActualIndex.value++
@@ -173,44 +175,6 @@ const siguiente = async () => {
   palabraArrastrada.value = null
   respondida.value = false
   respuestaCorrecta.value = false
-}
-
-// ===== GUARDAR PROGRESO EN DB =====
-const guardarProgreso = async () => {
-  try {
-    const usuarioId = authStore.usuarioActual?.id
-    if (!usuarioId) return
-
-    const existe = await database.progress
-      .where('[usuarioId+leccionId]')
-      .equals([usuarioId, leccion.value.id])
-      .first()
-
-    const puntaje = Math.round((aciertos.value / leccion.value.contenido.length) * 100)
-
-    if (existe) {
-      if (puntaje > existe.puntaje) {
-        await database.progress.update(existe.id, {
-          puntaje,
-          errores: errores.value,
-          esCompletado: true,
-          fechaIntento: new Date().toISOString()
-        })
-      }
-    } else {
-      await database.progress.add({
-        usuarioId,
-        leccionId: leccion.value.id,
-        nivel: leccion.value.nivel,
-        puntaje,
-        errores: errores.value,
-        esCompletado: true,
-        fechaIntento: new Date().toISOString()
-      })
-    }
-  } catch (e) {
-    console.error('Error guardando progreso:', e)
-  }
 }
 
 const reiniciar = () => {
