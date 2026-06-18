@@ -69,6 +69,13 @@
           Respondiste bien <strong>{{ aciertos }}</strong> de
           <strong>{{ leccion.contenido.length }}</strong> preguntas.
         </p>
+        <!-- ✅ Mensaje según si fue perfecta o no -->
+        <p v-if="errores === 0" class="text-success fw-bold">
+          ¡Sin errores! 🌟 La siguiente lección está desbloqueada.
+        </p>
+        <p v-else class="text-warning fw-bold">
+          Tuviste {{ errores }} error(es). ¡Inténtalo de nuevo para desbloquear la siguiente!
+        </p>
         <div class="d-flex gap-3 justify-content-center mt-3">
           <button class="btn btn-outline-secondary fw-bold" @click="reiniciar">Intentar de nuevo</button>
           <button class="btn btn-warning fw-bold" @click="$router.go(-1)">Volver al nivel</button>
@@ -95,7 +102,7 @@ const opcionSeleccionada = ref(null)
 const respondida = ref(false)
 const respuestaCorrecta = ref(false)
 const aciertos = ref(0)
-const errores = ref(0) // ✅ nuevo
+const errores = ref(0)
 
 const preguntaActual = computed(() => leccion.value?.contenido[preguntaActualIndex.value])
 const esUltima = computed(() => preguntaActualIndex.value === (leccion.value?.contenido.length - 1))
@@ -127,14 +134,15 @@ const responder = (opcion) => {
   if (respuestaCorrecta.value) {
     aciertos.value++
   } else {
-    errores.value++ // ✅ cuenta errores
+    errores.value++
   }
 }
 
 const siguiente = async () => {
   if (esUltima.value) {
     juegoTerminado.value = true
-    await leccionesStore.guardarProgreso(leccion.value, aciertos.value, errores.value) // ✅
+    // ✅ guardarProgreso ahora existe en el store
+    await leccionesStore.guardarProgreso(leccion.value, aciertos.value, errores.value)
     return
   }
   preguntaActualIndex.value++
@@ -149,7 +157,7 @@ const reiniciar = () => {
   respondida.value = false
   respuestaCorrecta.value = false
   aciertos.value = 0
-  errores.value = 0 // ✅
+  errores.value = 0
   juegoTerminado.value = false
 }
 </script>

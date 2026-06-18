@@ -2,6 +2,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { database } from '@/database/db'
+import { useAuthStore } from '@/stores/auth'
 
 export const useLeccionesStore = defineStore('lecciones', () => {
 
@@ -11,8 +12,7 @@ export const useLeccionesStore = defineStore('lecciones', () => {
   const mensajeError = ref('')
   const mensajeExito = ref('')
 
-  //admin
-  // ===== VALIDACIONES =====
+  // ===== VALIDACIONES (admin) =====
   const validarLeccion = (datos) => {
     if (!datos.titulo || datos.titulo.trim().length < 3) {
       return 'El título debe tener al menos 3 caracteres'
@@ -27,7 +27,6 @@ export const useLeccionesStore = defineStore('lecciones', () => {
       return 'Debes agregar al menos un ejercicio a la lección'
     }
 
-    // Validaciones por tipo de juego
     if (datos.tipo === 'opcion_multiple') {
       for (let i = 0; i < datos.contenido.length; i++) {
         const item = datos.contenido[i]
@@ -56,12 +55,11 @@ export const useLeccionesStore = defineStore('lecciones', () => {
       }
     }
 
-    return null // null = sin errores
+    return null
   }
 
-  // ===== ACCIONES =====
+  // ===== ACCIONES (admin) =====
 
-  // Cargar todas las lecciones
   const cargarLecciones = async () => {
     cargando.value = true
     mensajeError.value = ''
@@ -75,7 +73,6 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     }
   }
 
-  // Guardar lección nueva o editar una existente
   const guardarLeccion = async (datosLeccion) => {
     mensajeError.value = ''
     mensajeExito.value = ''
@@ -106,7 +103,6 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     }
   }
 
-  // Eliminar una lección por su id
   const eliminarLeccion = async (idLeccion) => {
     mensajeError.value = ''
     mensajeExito.value = ''
@@ -131,15 +127,14 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     }
   }
 
-  //niños
-  // ===== FUNCIONES DE LECTURA (PARA EL NIÑO) =====
+  // ===== FUNCIONES DE LECTURA (para el niño) =====
 
-  // 1. Obtener todas las lecciones de un nivel específico (Reutilizable para Level 1, 2, 3 y 4)
   const cargarLeccionesPorNivel = async (nivelRequerido) => {
     try {
       cargando.value = true
-      // Filtramos en la base de datos por el nivel numérico
-      const leccionesDelNivel = await database.lecciones.where({ nivel: Number(nivelRequerido) }).toArray()
+      const leccionesDelNivel = await database.lecciones
+        .where({ nivel: Number(nivelRequerido) })
+        .toArray()
       return leccionesDelNivel
     } catch (error) {
       console.error(`Error cargando lecciones del nivel ${nivelRequerido}:`, error)
@@ -149,7 +144,6 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     }
   }
 
-  // 2. Obtener una lección específica por su ID (Para jugar un minijuego)
   const obtenerLeccionPorId = async (idLeccion) => {
     try {
       cargando.value = true
@@ -162,10 +156,56 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     }
   }
 
-  // Limpiar mensajes manualmente si se necesita
+  // ===== GUARDAR PROGRESO (usado por los 3 Play views) =====
+  // La lección se marca como completada SOLO si el niño no tuvo ningún error.
+  //  Si el niño ya la había completado perfecta antes, no se sobreescribe con un intento peor.
+  const guardarProgreso = async (leccion, aciertos, errores) => {
+    try {
+      const authStore = useAuthStore()
+      const usuarioId = authStore.usuarioActual?.id
+      if (!usuarioId || !leccion?.id) return
+
+      const totalEjercicios = leccion.contenido?.length || 1
+      const puntaje = Math.round((aciertos / totalEjercicios) * 100)
+
+      // ✅ Solo se considera completada si no hubo ningún error
+      const esCompletado = errores === 0
+
+      // Buscar si ya existe un registro para este usuario + lección
+      const registroExistente = await database.progress
+        .where('[usuarioId+leccionId]')
+        .equals([usuarioId, leccion.id])
+        .first()
+
+      if (registroExistente) {
+        // ✅ Solo actualizar si el nuevo intento es mejor (más puntaje)
+        // Esto protege que un intento con errores no "borre" una compleción perfecta anterior
+        if (puntaje > registroExistente.puntaje) {
+          await database.progress.update(registroExistente.id, {
+            puntaje,
+            errores,
+            esCompletado,
+            fechaIntento: new Date().toISOString()
+          })
+        }
+      } else {
+        // Primer intento: crear el registro
+        await database.progress.add({
+          usuarioId,
+          leccionId: leccion.id,
+          nivel: leccion.nivel,
+          puntaje,
+          errores,
+          esCompletado,
+          fechaIntento: new Date().toISOString()
+        })
+      }
+    } catch (error) {
+      console.error('Error guardando progreso:', error)
+    }
+  }
+
   const limpiarMensajes = () => {
-
-
     mensajeError.value = ''
     mensajeExito.value = ''
   }
@@ -180,6 +220,7 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     eliminarLeccion,
     cargarLeccionesPorNivel,
     obtenerLeccionPorId,
+    guardarProgreso,   // ✅ exportado para los Play views
     limpiarMensajes
   }
 })
