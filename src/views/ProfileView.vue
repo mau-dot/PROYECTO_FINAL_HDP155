@@ -180,10 +180,10 @@ const guardarCambiosAdmin = async () => {
     password: formAdmin.value.password // Si está vacío, el adminStore lo ignora de forma inteligente
   }
 
-  // Llamar al Store (tu adminStore ya tiene la lógica de base de datos)
+  // Llamar al adminStore 
   const exito = await adminStore.actualizarPerfilAdmin(authStore.usuarioActual.id, datosAEnviar)
 
-  // Si se guardó con éxito, limpiamos los campos de las contraseñas por seguridad
+  // impiar al ser el cambio exitoso
   if (exito) {
     formAdmin.value.password = ''
     formAdmin.value.confirmPassword = ''

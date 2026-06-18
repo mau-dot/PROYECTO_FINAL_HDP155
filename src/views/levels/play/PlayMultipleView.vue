@@ -78,83 +78,69 @@
   </div>
 </template>
 
-<script>
-import { database } from '@/database/db'
-import ProgressBar from '@/components/game/ProgressBar.vue'
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useLeccionesStore } from '@/stores/leccionesStore'
 
-export default {
-  name: 'PlayMultipleView',
-  components: { ProgressBar },
-  data() {
-    return {
-      leccion: null,
-      cargando: true,
-      preguntaActualIndex: 0,
-      opcionSeleccionada: null,
-      respondida: false,
-      respuestaCorrecta: false,
-      aciertos: 0,
-      juegoTerminado: false
-    }
-  },
-  computed: {
-    porcentaje() {
-      if (!this.leccion) return 0
-      if (this.juegoTerminado) return 100
-      return Math.round(((this.preguntaActualIndex + 1) / this.leccion.contenido.length) * 100)
-    },
-    preguntaActual() {
-      return this.leccion?.contenido[this.preguntaActualIndex]
-    },
-    esUltima() {
-      return this.preguntaActualIndex === this.leccion.contenido.length - 1
-    }
-  },
-  async mounted() {
-    await this.cargarLeccion()
-  },
-  methods: {
-    async cargarLeccion() {
-      try {
-        const id = Number(this.$route.params.id)
-        this.leccion = await database.lecciones.get(id)
-      } catch (e) {
-        console.error('Error cargando lección:', e)
-      } finally {
-        this.cargando = false
-      }
-    },
-    getOpcionClass(opcion) {
-      if (!this.respondida) return 'btn-outline-primary'
-      if (opcion === this.preguntaActual.respuestaCorrecta) return 'btn-success text-white'
-      if (opcion === this.opcionSeleccionada) return 'btn-danger text-white'
-      return 'btn-outline-secondary'
-    },
-    responder(opcion) {
-      this.opcionSeleccionada = opcion
-      this.respondida = true
-      this.respuestaCorrecta = opcion === this.preguntaActual.respuestaCorrecta
-      if (this.respuestaCorrecta) this.aciertos++
-    },
-    siguiente() {
-      if (this.esUltima) {
-        this.juegoTerminado = true
-        return
-      }
-      this.preguntaActualIndex++
-      this.opcionSeleccionada = null
-      this.respondida = false
-      this.respuestaCorrecta = false
-    },
-    reiniciar() {
-      this.preguntaActualIndex = 0
-      this.opcionSeleccionada = null
-      this.respondida = false
-      this.respuestaCorrecta = false
-      this.aciertos = 0
-      this.juegoTerminado = false
-    }
+const route = useRoute()
+const leccionesStore = useLeccionesStore()
+
+const cargando = ref(true)
+const leccion = ref(null)
+const juegoTerminado = ref(false)
+const preguntaActualIndex = ref(0)
+const opcionSeleccionada = ref(null)
+const respondida = ref(false)
+const respuestaCorrecta = ref(false)
+const aciertos = ref(0)
+
+// Propiedades computadas
+const preguntaActual = computed(() => leccion.value?.contenido[preguntaActualIndex.value])
+const esUltima = computed(() => preguntaActualIndex.value === (leccion.value?.contenido.length - 1))
+const porcentaje = computed(() => leccion.value ? (preguntaActualIndex.value / leccion.value.contenido.length) * 100 : 0)
+
+onMounted(async () => {
+  cargando.value = true
+  const idLeccion = Number(route.params.id)
+  leccion.value = await leccionesStore.obtenerLeccionPorId(idLeccion)
+  cargando.value = false
+})
+
+// Métodos
+const getOpcionClass = (opcion) => {
+  if (!respondida.value) return 'btn-outline-primary'
+  if (opcion === preguntaActual.value.respuestaCorrecta) return 'btn-success text-white'
+  if (opcion === opcionSeleccionada.value) return 'btn-danger text-white'
+  return 'btn-outline-secondary'
+}
+
+const responder = (opcion) => {
+  if (respondida.value) return
+  opcionSeleccionada.value = opcion
+  respondida.value = true
+  respuestaCorrecta.value = opcion === preguntaActual.value.respuestaCorrecta
+  if (respuestaCorrecta.value) aciertos.value++
+}
+
+const siguiente = () => {
+  if (esUltima.value) {
+    juegoTerminado.value = true
+    return
   }
+  preguntaActualIndex.value++
+  opcionSeleccionada.value = null
+  respondida.value = false
+  respuestaCorrecta.value = false
+}
+
+const reiniciar = () => {
+  preguntaActualIndex.value = 0
+  opcionSeleccionada.value = null
+  respondida.value = false
+  respuestaCorrecta.value = false
+  aciertos.value = 0
+  juegoTerminado.value = false
 }
 </script>
 

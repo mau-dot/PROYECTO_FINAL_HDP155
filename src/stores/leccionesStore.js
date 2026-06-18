@@ -11,6 +11,7 @@ export const useLeccionesStore = defineStore('lecciones', () => {
   const mensajeError = ref('')
   const mensajeExito = ref('')
 
+  //admin
   // ===== VALIDACIONES =====
   const validarLeccion = (datos) => {
     if (!datos.titulo || datos.titulo.trim().length < 3) {
@@ -130,8 +131,41 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     }
   }
 
+  //niños
+  // ===== FUNCIONES DE LECTURA (PARA EL NIÑO) =====
+
+  // 1. Obtener todas las lecciones de un nivel específico (Reutilizable para Level 1, 2, 3 y 4)
+  const cargarLeccionesPorNivel = async (nivelRequerido) => {
+    try {
+      cargando.value = true
+      // Filtramos en la base de datos por el nivel numérico
+      const leccionesDelNivel = await database.lecciones.where({ nivel: Number(nivelRequerido) }).toArray()
+      return leccionesDelNivel
+    } catch (error) {
+      console.error(`Error cargando lecciones del nivel ${nivelRequerido}:`, error)
+      return []
+    } finally {
+      cargando.value = false
+    }
+  }
+
+  // 2. Obtener una lección específica por su ID (Para jugar un minijuego)
+  const obtenerLeccionPorId = async (idLeccion) => {
+    try {
+      cargando.value = true
+      return await database.lecciones.get(Number(idLeccion))
+    } catch (error) {
+      console.error('Error obteniendo la lección:', error)
+      return null
+    } finally {
+      cargando.value = false
+    }
+  }
+
   // Limpiar mensajes manualmente si se necesita
   const limpiarMensajes = () => {
+
+
     mensajeError.value = ''
     mensajeExito.value = ''
   }
@@ -144,6 +178,8 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     cargarLecciones,
     guardarLeccion,
     eliminarLeccion,
+    cargarLeccionesPorNivel,
+    obtenerLeccionPorId,
     limpiarMensajes
   }
 })

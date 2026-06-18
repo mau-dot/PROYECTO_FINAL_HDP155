@@ -14,9 +14,9 @@
       <section class="hero-section p-4 p-lg-5 rounded-5 shadow-sm mb-5">
         <div class="row align-items-center gy-4">
           <div class="col-lg-7">
-            <span class="badge rounded-pill bg-info-subtle text-info-emphasis px-3 py-2 mb-3"
-              >🏆 Expertos en Aprendizaje</span
-            >
+            <span class="badge rounded-pill bg-info-subtle text-info-emphasis px-3 py-2 mb-3">
+              🏆 Expertos en Aprendizaje
+            </span>
             <h1 class="display-5 fw-bold mb-3 text-primary">🧠 ¡Exploradores Expertos!</h1>
             <p class="lead text-secondary mb-4">
               Retos para 7-8 años: lectura avanzada, comprensión y ejercicios para consolidar
@@ -27,13 +27,13 @@
               <div class="col">
                 <div class="stat-card p-3 rounded-4 bg-white border shadow-sm h-100">
                   <span class="d-block text-uppercase text-muted small mb-2">Lecciones</span>
-                  <strong class="fs-3">{{ allLessons.length }}</strong>
+                  <strong class="fs-3">{{ allLessons?.length || 0 }}</strong>
                 </div>
               </div>
               <div class="col">
                 <div class="stat-card p-3 rounded-4 bg-white border shadow-sm h-100">
                   <span class="d-block text-uppercase text-muted small mb-2">Completadas</span>
-                  <strong class="fs-3">{{ completedLessonIds.length }}</strong>
+                  <strong class="fs-3">{{ completedLessonIds?.length || 0 }}</strong>
                 </div>
               </div>
               <div class="col">
@@ -63,19 +63,19 @@
                 <div class="menu-chip bg-warning-subtle border border-warning-subtle rounded-4 p-3">
                   <div class="fw-bold">Comprensión lectora</div>
                   <div class="small text-secondary">
-                    {{ leccionesOpcionMultiple.length }} disponible(s)
+                    {{ leccionesOpcionMultiple?.length || 0 }} disponible(s)
                   </div>
                 </div>
                 <div class="menu-chip bg-info-subtle border border-info-subtle rounded-4 p-3">
                   <div class="fw-bold">Redacción y vocabulario</div>
                   <div class="small text-secondary">
-                    {{ leccionesCompletar.length }} disponible(s)
+                    {{ leccionesCompletar?.length || 0 }} disponible(s)
                   </div>
                 </div>
                 <div class="menu-chip bg-success-subtle border border-success-subtle rounded-4 p-3">
                   <div class="fw-bold">Operaciones y lógica</div>
                   <div class="small text-secondary">
-                    {{ leccionesMatematica.length }} disponible(s)
+                    {{ leccionesMatematica?.length || 0 }} disponible(s)
                   </div>
                 </div>
               </div>
@@ -84,7 +84,12 @@
         </div>
       </section>
 
-      <section v-if="allLessons.length === 0" class="text-center py-5">
+      <div v-if="cargando" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 text-muted">Cargando retos para expertos...</p>
+      </div>
+
+      <section v-else-if="!allLessons || allLessons.length === 0" class="text-center py-5">
         <p class="fs-4 text-muted">😴 Aún no hay lecciones para este nivel.</p>
         <p class="text-muted small">
           El administrador todavía no ha creado contenido para Nivel 4.
@@ -124,97 +129,90 @@
   </div>
 </template>
 
-<script>
-import { database } from '@/database/db'
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useLeccionesStore } from '@/stores/leccionesStore'
 
-export default {
-  name: 'Level4View',
-  data() {
-    return {
-      allLessons: [],
-      completedLessonIds: [],
-      currentChildId: 1,
-      cargando: true,
-    }
-  },
-  computed: {
-    leccionesOpcionMultiple() {
-      return this.allLessons.filter((l) => l.tipo === 'opcion_multiple').sort((a, b) => a.id - b.id)
-    },
-    leccionesCompletar() {
-      return this.allLessons
-        .filter((l) => l.tipo === 'completar_oracion')
-        .sort((a, b) => a.id - b.id)
-    },
-    leccionesMatematica() {
-      return this.allLessons.filter((l) => l.tipo === 'matematica').sort((a, b) => a.id - b.id)
-    },
-  },
-  async mounted() {
-    await this.loadLevelData()
-  },
-  methods: {
-    async loadLevelData() {
-      try {
-        this.cargando = true
-        this.allLessons = await database.lecciones.where('nivel').equals(4).toArray()
-        const progressRecords = await database.progress
-          .where('usuarioId')
-          .equals(this.currentChildId)
-          .toArray()
-        this.completedLessonIds = progressRecords
-          .filter((p) => p.esCompletado)
-          .map((p) => p.leccionId)
-      } catch (error) {
-        console.error('Error cargando datos del nivel 4:', error)
-      } finally {
-        this.cargando = false
-      }
-    },
-    isLessonCompleted(lessonId) {
-      return this.completedLessonIds.includes(lessonId)
-    },
-    isLessonLocked(group, index) {
-      if (index === 0) return false
-      const previousLesson = group[index - 1]
-      return !this.isLessonCompleted(previousLesson.id)
-    },
-    goToLesson(lessonId) {
-      const lesson = this.allLessons.find((l) => l.id === lessonId)
-      if (!lesson) return
-      const routeMap = {
-        opcion_multiple: 'play-multiple',
-        completar_oracion: 'play-fill',
-        matematica: 'play-math',
-      }
-      const routeName = routeMap[lesson.tipo] || 'play-multiple'
-      this.$router.push({ name: routeName, params: { id: lessonId } })
-    },
-    lessonTypeLabel(tipo) {
-      const labels = {
-        opcion_multiple: 'Opción múltiple',
-        completar_oracion: 'Completar oración',
-        matematica: 'Matemática',
-      }
-      return labels[tipo] || 'Lección'
-    },
-    lessonBadgeClass(tipo) {
-      const classes = {
-        opcion_multiple: 'bg-warning-subtle text-warning border-warning-subtle',
-        completar_oracion: 'bg-info-subtle text-info-emphasis border-info-subtle',
-        matematica: 'bg-success-subtle text-success-emphasis border-success-subtle',
-      }
-      return classes[tipo] || 'bg-secondary text-dark'
-    },
-    getLessonEmoji(tipo) {
-      const map = {
-        opcion_multiple: '🧠',
-        completar_oracion: '📝',
-        matematica: '📐',
-      }
-      return map[tipo] || '🎯'
-    },
-  },
+const router = useRouter()
+const leccionesStore = useLeccionesStore()
+
+// Variables reactivas
+const allLessons = ref([])
+const completedLessonIds = ref([])
+const cargando = ref(true)
+
+// Filtros computados
+const leccionesOpcionMultiple = computed(() => allLessons.value.filter((l) => l.tipo === 'opcion_multiple') || [])
+const leccionesCompletar = computed(() => allLessons.value.filter((l) => l.tipo === 'completar_oracion') || [])
+const leccionesMatematica = computed(() => allLessons.value.filter((l) => l.tipo === 'matematica') || [])
+
+onMounted(async () => {
+  await loadLevelData()
+})
+
+const loadLevelData = async () => {
+  cargando.value = true
+  try {
+    // LLAMADO A PINIA CON EL NIVEL 4
+    const lecciones = await leccionesStore.cargarLeccionesPorNivel(4)
+    allLessons.value = lecciones || []
+  } catch (error) {
+    console.error('Error cargando datos del nivel 4:', error)
+    allLessons.value = []
+  } finally {
+    cargando.value = false
+  }
+}
+
+// Funciones de estado
+const isLessonCompleted = (lessonId) => {
+  return completedLessonIds.value.includes(lessonId)
+}
+
+const isLessonLocked = (group, index) => {
+  return false // Desbloqueado por defecto para pruebas
+}
+
+const goToLesson = (lessonId) => {
+  const lesson = allLessons.value.find((l) => l.id === lessonId)
+  if (!lesson) return
+  
+  const routeMap = {
+    opcion_multiple: 'play-multiple',
+    completar_oracion: 'play-fill',
+    matematica: 'play-math',
+  }
+  const routeName = routeMap[lesson.tipo] || 'play-multiple'
+  router.push({ name: routeName, params: { id: lessonId } })
+}
+
+// Funciones de diseño visual (UI)
+const lessonTypeLabel = (tipo) => {
+  const labels = {
+    opcion_multiple: 'Opción múltiple',
+    completar_oracion: 'Completar oración',
+    matematica: 'Matemática',
+  }
+  return labels[tipo] || 'Lección'
+}
+
+const lessonBadgeClass = (tipo) => {
+  const classes = {
+    opcion_multiple: 'bg-warning-subtle text-warning border-warning-subtle',
+    completar_oracion: 'bg-info-subtle text-info-emphasis border-info-subtle',
+    matematica: 'bg-success-subtle text-success-emphasis border-success-subtle',
+  }
+  return classes[tipo] || 'bg-secondary text-dark'
+}
+
+const getLessonEmoji = (tipo) => {
+  const map = {
+    opcion_multiple: '🧠',
+    completar_oracion: '📝',
+    matematica: '📐',
+  }
+  return map[tipo] || '🎯'
 }
 </script>
 
