@@ -82,6 +82,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLeccionesStore } from '@/stores/leccionesStore'
+import ProgressBar from '@/components/game/ProgressBar.vue'
 
 const route = useRoute()
 const leccionesStore = useLeccionesStore()
@@ -94,10 +95,15 @@ const respuestaUsuario = ref(null)
 const respondida = ref(false)
 const respuestaCorrecta = ref(false)
 const aciertos = ref(0)
+const errores = ref(0) // ✅ nuevo
 
 const ejercicioActual = computed(() => leccion.value?.contenido[preguntaActualIndex.value])
 const esUltimo = computed(() => preguntaActualIndex.value === (leccion.value?.contenido.length - 1))
-const porcentaje = computed(() => leccion.value ? (preguntaActualIndex.value / leccion.value.contenido.length) * 100 : 0)
+const porcentaje = computed(() => {
+  if (!leccion.value) return 0
+  if (juegoTerminado.value) return 100
+  return Math.round(((preguntaActualIndex.value + 1) / leccion.value.contenido.length) * 100)
+})
 
 onMounted(async () => {
   cargando.value = true
@@ -109,13 +115,18 @@ onMounted(async () => {
 const verificar = () => {
   if (respuestaUsuario.value === null || respuestaUsuario.value === '') return
   respuestaCorrecta.value = Number(respuestaUsuario.value) === Number(ejercicioActual.value.respuestaCorrecta)
-  if (respuestaCorrecta.value) aciertos.value++
+  if (respuestaCorrecta.value) {
+    aciertos.value++
+  } else {
+    errores.value++ // ✅ cuenta errores
+  }
   respondida.value = true
 }
 
-const siguiente = () => {
+const siguiente = async () => {
   if (esUltimo.value) {
     juegoTerminado.value = true
+    await leccionesStore.guardarProgreso(leccion.value, aciertos.value, errores.value) // ✅
     return
   }
   preguntaActualIndex.value++
@@ -130,6 +141,7 @@ const reiniciar = () => {
   respondida.value = false
   respuestaCorrecta.value = false
   aciertos.value = 0
+  errores.value = 0 // ✅
   juegoTerminado.value = false
 }
 </script>

@@ -200,25 +200,31 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue' // Agregué computed
-import { useLeccionesStore } from '@/stores/leccionesStore'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { database } from '@/database/db'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
-const leccionesStore = useLeccionesStore()
+const authStore = useAuthStore()
 
-// Variables reactivas principales
+// ===== VARIABLES =====
 const allLessons = ref([])
 const cargando = ref(true)
+const completedLessonIds = ref([])
 
-// ¡AGREGADO!: Variables que tu HTML estaba pidiendo pero no existían
-const completedLessonIds = ref([]) 
+// ===== COMPUTED =====
+const leccionesOpcionMultiple = computed(() =>
+  allLessons.value.filter(l => l.tipo === 'opcion_multiple')
+)
+const leccionesCompletar = computed(() =>
+  allLessons.value.filter(l => l.tipo === 'completar_oracion')
+)
+const leccionesMatematica = computed(() =>
+  allLessons.value.filter(l => l.tipo === 'matematica')
+)
 
-// ¡AGREGADO!: Filtros calculados para los chips de la derecha
-const leccionesOpcionMultiple = computed(() => allLessons.value.filter(l => l.tipo === 'opcion_multiple') || [])
-const leccionesCompletar = computed(() => allLessons.value.filter(l => l.tipo === 'completar_oracion') || [])
-const leccionesMatematica = computed(() => allLessons.value.filter(l => l.tipo === 'matematica') || [])
-
+// ===== CARGAR DATOS =====
 onMounted(async () => {
   await inicializarNivel()
 })
@@ -226,45 +232,69 @@ onMounted(async () => {
 const inicializarNivel = async () => {
   cargando.value = true
   try {
-    const lecciones = await leccionesStore.cargarLeccionesPorNivel(1)
-    // El || [] asegura que nunca sea undefined
-    allLessons.value = lecciones || []
+    // 1. Cargar lecciones del nivel 1 directo de Dexie
+    allLessons.value = await database.lecciones
+      .where('nivel')
+      .equals(1)
+      .toArray()
+
+    // 2. Cargar progreso del niño en sesión
+    const usuarioId = authStore.usuarioActual?.id
+    if (usuarioId) {
+      const progressRecords = await database.progress
+        .where('usuarioId')
+        .equals(usuarioId)
+        .toArray()
+
+      // ✅ Solo completada si tuvo 0 errores (100% aciertos)
+      completedLessonIds.value = progressRecords
+        .filter(p => p.esCompletado && p.errores === 0)
+        .map(p => p.leccionId)
+    }
   } catch (error) {
-    console.error("Error al cargar lecciones:", error)
+    console.error('Error al cargar lecciones:', error)
     allLessons.value = []
   } finally {
     cargando.value = false
   }
 }
 
-// ¡AGREGADO!: Funciones auxiliares que tu HTML necesita para dibujar las tarjetas
+// ===== LÓGICA DE BLOQUEO =====
+const isLessonCompleted = (lessonId) => {
+  return completedLessonIds.value.includes(lessonId)
+}
+
 const isLessonLocked = (lessons, index) => {
-  // Por ahora las dejamos todas desbloqueadas para que pruebes los minijuegos. 
-  // Luego puedes agregar lógica aquí si lo deseas.
-  return false
+  // Primera lección siempre desbloqueada
+  if (index === 0) return false
+  // Las demás requieren que la anterior esté completada al 100%
+  const leccionAnterior = lessons[index - 1]
+  return !isLessonCompleted(leccionAnterior.id)
 }
 
-const isLessonCompleted = (id) => {
-  return completedLessonIds.value.includes(id)
-}
-
+// ===== ETIQUETAS =====
 const lessonTypeLabel = (tipo) => {
-  if (tipo === 'opcion_multiple') return 'Opción Múltiple'
-  if (tipo === 'completar_oracion') return 'Completar Oración'
-  if (tipo === 'matematica') return 'Matemáticas'
-  return 'Actividad'
+  const map = {
+    opcion_multiple:   'Opción múltiple',
+    completar_oracion: 'Completar oración',
+    matematica:        'Matemática'
+  }
+  return map[tipo] || 'Actividad'
 }
 
-// Función principal para navegar
+// ===== NAVEGACIÓN =====
 const irAJugar = (leccion) => {
-  if (!leccion || !leccion.tipo) return
+  if (!leccion?.tipo) return
 
-  if (leccion.tipo === 'opcion_multiple') {
-    router.push({ name: 'play-multiple', params: { id: leccion.id } })
-  } else if (leccion.tipo === 'matematica') {
-    router.push({ name: 'play-math', params: { id: leccion.id } })
-  } else if (leccion.tipo === 'completar_oracion') {
-    router.push({ name: 'play-fill', params: { id: leccion.id } })
+  const routeMap = {
+    opcion_multiple:   'play-multiple',
+    completar_oracion: 'play-fill',
+    matematica:        'play-math'
+  }
+
+  const routeName = routeMap[leccion.tipo]
+  if (routeName) {
+    router.push({ name: routeName, params: { id: leccion.id } })
   }
 }
 </script>

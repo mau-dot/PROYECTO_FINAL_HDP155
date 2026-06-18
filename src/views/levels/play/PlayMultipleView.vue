@@ -82,6 +82,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLeccionesStore } from '@/stores/leccionesStore'
+import ProgressBar from '@/components/game/ProgressBar.vue'
 
 const route = useRoute()
 const leccionesStore = useLeccionesStore()
@@ -94,11 +95,15 @@ const opcionSeleccionada = ref(null)
 const respondida = ref(false)
 const respuestaCorrecta = ref(false)
 const aciertos = ref(0)
+const errores = ref(0) // ✅ nuevo
 
-// Propiedades computadas
 const preguntaActual = computed(() => leccion.value?.contenido[preguntaActualIndex.value])
 const esUltima = computed(() => preguntaActualIndex.value === (leccion.value?.contenido.length - 1))
-const porcentaje = computed(() => leccion.value ? (preguntaActualIndex.value / leccion.value.contenido.length) * 100 : 0)
+const porcentaje = computed(() => {
+  if (!leccion.value) return 0
+  if (juegoTerminado.value) return 100
+  return Math.round(((preguntaActualIndex.value + 1) / leccion.value.contenido.length) * 100)
+})
 
 onMounted(async () => {
   cargando.value = true
@@ -107,7 +112,6 @@ onMounted(async () => {
   cargando.value = false
 })
 
-// Métodos
 const getOpcionClass = (opcion) => {
   if (!respondida.value) return 'btn-outline-primary'
   if (opcion === preguntaActual.value.respuestaCorrecta) return 'btn-success text-white'
@@ -120,12 +124,17 @@ const responder = (opcion) => {
   opcionSeleccionada.value = opcion
   respondida.value = true
   respuestaCorrecta.value = opcion === preguntaActual.value.respuestaCorrecta
-  if (respuestaCorrecta.value) aciertos.value++
+  if (respuestaCorrecta.value) {
+    aciertos.value++
+  } else {
+    errores.value++ // ✅ cuenta errores
+  }
 }
 
-const siguiente = () => {
+const siguiente = async () => {
   if (esUltima.value) {
     juegoTerminado.value = true
+    await leccionesStore.guardarProgreso(leccion.value, aciertos.value, errores.value) // ✅
     return
   }
   preguntaActualIndex.value++
@@ -140,6 +149,7 @@ const reiniciar = () => {
   respondida.value = false
   respuestaCorrecta.value = false
   aciertos.value = 0
+  errores.value = 0 // ✅
   juegoTerminado.value = false
 }
 </script>
