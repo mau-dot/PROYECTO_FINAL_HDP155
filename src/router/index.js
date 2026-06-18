@@ -139,8 +139,11 @@ router.beforeEach((destino) => {
     const nivelRequerido = Number(destino.meta.nivelRequerido)
     const nivelUsuarioValido = Number.isInteger(nivelUsuario) && nivelUsuario > 0
 
-    if (!nivelUsuarioValido || nivelUsuario !== nivelRequerido) {
-      // Si el child aún no tiene nivel asignado o intenta entrar a otro, lo enviamos a una ruta segura
+    // Permitir que usuarios de nivel superior accedan a niveles inferiores.
+    // Antes: se exigía igualdad estricta (nivelUsuario === nivelRequerido)
+    // Ahora: se permite acceso si nivelUsuario >= nivelRequerido
+    if (!nivelUsuarioValido || nivelUsuario < nivelRequerido) {
+      // Si el child aún no tiene nivel asignado o intenta entrar a un nivel superior, lo enviamos a una ruta segura
       return { name: nivelUsuarioValido ? `level${nivelUsuario}` : 'home' }
     }
   }
