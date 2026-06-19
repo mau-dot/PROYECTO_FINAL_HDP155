@@ -55,12 +55,6 @@ const toggleTema = () => {
               Cerrar sesion
             </button>
           </li>
-
-          <li class="nav-item ms-lg-3">
-            <button @click="toggleTema" class="btn btn-warning rounded-circle p-2 fs-5 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;" title="Cambiar color del sitio">
-              {{ modoOscuro ? '☀️' : '🌙' }}
-            </button>
-          </li>
         </ul>
       </div>
     </div>
