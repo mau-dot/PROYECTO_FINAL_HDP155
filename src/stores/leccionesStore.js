@@ -5,14 +5,11 @@ import { database } from '@/database/db'
 import { useAuthStore } from '@/stores/auth'
 
 export const useLeccionesStore = defineStore('lecciones', () => {
-
-  // ===== DATOS =====
   const listaLecciones = ref([])
   const cargando = ref(false)
   const mensajeError = ref('')
   const mensajeExito = ref('')
 
-  // ===== VALIDACIONES (admin) =====
   const validarLeccion = (datos) => {
     if (!datos.titulo || datos.titulo.trim().length < 3) {
       return 'El título debe tener al menos 3 caracteres'
@@ -30,7 +27,7 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     if (datos.tipo === 'opcion_multiple') {
       for (let i = 0; i < datos.contenido.length; i++) {
         const item = datos.contenido[i]
-        const opcionesValidas = item.opciones.filter(o => o.trim() !== '')
+        const opcionesValidas = item.opciones.filter((o) => o.trim() !== '')
 
         if (opcionesValidas.length < 3) {
           return `La pregunta #${i + 1} debe tener al menos 3 opciones llenas`
@@ -57,8 +54,6 @@ export const useLeccionesStore = defineStore('lecciones', () => {
 
     return null
   }
-
-  // ===== ACCIONES (admin) =====
 
   const cargarLecciones = async () => {
     cargando.value = true
@@ -127,8 +122,6 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     }
   }
 
-  // ===== FUNCIONES DE LECTURA (para el niño) =====
-
   const cargarLeccionesPorNivel = async (nivelRequerido) => {
     try {
       cargando.value = true
@@ -144,33 +137,27 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     }
   }
 
-  // ===== FUNCIONES MAESTRAS PARA LAS VISTAS DE NIVEL =====
-
-  // Esta función obtiene TODAS las lecciones de un nivel y averigua cuáles ya completó el niño
+  // Trae las lecciones de un nivel y filtra los IDs que el alumno ya completó
   const cargarDatosNivelCompleto = async (nivelRequerido, usuarioId) => {
     try {
       cargando.value = true
-      
+
       // 1. Buscamos todas las lecciones correspondientes a este nivel
-      const lecciones = await database.lecciones
-        .where({ nivel: Number(nivelRequerido) })
-        .toArray()
-      
+      const lecciones = await database.lecciones.where({ nivel: Number(nivelRequerido) }).toArray()
+
       // 2. Buscamos el progreso de este niño en particular
       const progreso = await database.progress
         .where('usuarioId')
         .equals(Number(usuarioId))
         .toArray()
-        
+
       // 3. Filtramos solo los IDs de las lecciones que ya completó
-      const completadas = progreso
-        .filter((p) => p.esCompletado)
-        .map((p) => p.leccionId)
+      const completadas = progreso.filter((p) => p.esCompletado).map((p) => p.leccionId)
 
       // Retornamos ambas cosas empaquetadas de forma limpia
       return {
         lecciones: lecciones || [],
-        completadas: completadas || []
+        completadas: completadas || [],
       }
     } catch (error) {
       console.error(`Error cargando los datos maestros del nivel ${nivelRequerido}:`, error)
@@ -192,9 +179,7 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     }
   }
 
-  // ===== GUARDAR PROGRESO (usado por los 3 Play views) =====
-  // La lección se marca como completada SOLO si el niño no tuvo ningún error.
-  //  Si el niño ya la había completado perfecta antes, no se sobreescribe con un intento peor.
+  // Guarda el progreso y maneja la lógica de nivelación/medallas si la lección se pasa sin errores
   const guardarProgreso = async (leccion, aciertos, errores) => {
     try {
       const authStore = useAuthStore()
@@ -204,7 +189,7 @@ export const useLeccionesStore = defineStore('lecciones', () => {
       const totalEjercicios = leccion.contenido?.length || 1
       const puntaje = Math.round((aciertos / totalEjercicios) * 100)
 
-      // ✅ Solo se considera completada si no hubo ningún error
+      // Solo se considera completada si no hubo ningún error
       const esCompletado = errores === 0
 
       // Buscar si ya existe un registro para este usuario + lección
@@ -214,14 +199,13 @@ export const useLeccionesStore = defineStore('lecciones', () => {
         .first()
 
       if (registroExistente) {
-        // ✅ Solo actualizar si el nuevo intento es mejor (más puntaje)
-        // Esto protege que un intento con errores no "borre" una compleción perfecta anterior
+        // Solo actualizamos si supera la puntuación anterior (evita pisar un 100% perfecto)
         if (puntaje > registroExistente.puntaje) {
           await database.progress.update(registroExistente.id, {
             puntaje,
             errores,
             esCompletado,
-            fechaIntento: new Date().toISOString()
+            fechaIntento: new Date().toISOString(),
           })
         }
       } else {
@@ -233,8 +217,84 @@ export const useLeccionesStore = defineStore('lecciones', () => {
           puntaje,
           errores,
           esCompletado,
-          fechaIntento: new Date().toISOString()
+          fechaIntento: new Date().toISOString(),
         })
+      }
+
+      if (esCompletado) {
+        alert(
+          '🎉 ¡LECCION PERFECTA! 🎉\n\n¡Completaste la lección al 100% sin cometer ningún error!\n\nSigue acumulando victorias. 🏅',
+        )
+
+        const usuarioDb = await database.usuarios.get(usuarioId)
+
+        if (usuarioDb) {
+          const medallasDesbloqueadas = usuarioDb.medallasDesbloqueadas || []
+          const medallaId = Number(leccion.nivel) // La medalla corresponde al nivel de la lección
+
+          const siguienteNivel = Number(leccion.nivel) + 1
+          const nivelActualUsuario = Number(usuarioDb.nivel || 1)
+
+          const nuevosDatos = {}
+
+          if (!medallasDesbloqueadas.includes(medallaId)) {
+            medallasDesbloqueadas.push(medallaId)
+            nuevosDatos.medallasDesbloqueadas = medallasDesbloqueadas
+            nuevosDatos.medallasCount = medallasDesbloqueadas.length
+          }
+
+          // Sube de nivel si la lección corresponde a su nivel actual y no supera el ultimo nivel (Nivel 4)
+          if (Number(leccion.nivel) === nivelActualUsuario && siguienteNivel <= 4) {
+            const todasLasLeccionesNivel = await database.lecciones
+              .where('nivel')
+              .equals(Number(leccion.nivel))
+              .toArray()
+
+            const progresosPrevios = await database.progress
+              .where({ usuarioId: usuarioId, nivel: Number(leccion.nivel) })
+              .toArray()
+
+            const leccionesPerfectasIds = new Set(
+              progresosPrevios
+                .filter((p) => p.esCompletado === true || p.errores === 0)
+                .map((p) => p.leccionId),
+            )
+
+            // Añadimos manualmente el ID actual para evitar el delay asíncrono de Dexie
+            leccionesPerfectasIds.add(leccion.id)
+
+            const tieneTodoPerfecto = todasLasLeccionesNivel.every((l) =>
+              leccionesPerfectasIds.has(l.id),
+            )
+
+            // Si resolvió todas las lecciones existentes de este nivel sin fallas, sube de rango
+            if (tieneTodoPerfecto && todasLasLeccionesNivel.length > 0) {
+              nuevosDatos.nivel = siguienteNivel
+
+              alert(
+                `🚀 ¡FELICIDADES ASCENDISTE DE RANGO! 🚀\n\n¡Dominaste por completo el Nivel ${leccion.nivel}!\n\nSe han abierto las puertas del Nivel ${siguienteNivel} para ti.`,
+              )
+            }
+          }
+
+          // Si hubo cambios en medallas o en nivel, guardamos los datos
+          if (Object.keys(nuevosDatos).length > 0) {
+            // Actualizamos en la base de datos de Dexie
+            await database.usuarios.update(usuarioId, nuevosDatos)
+
+            // Sincronizamos en vivo el AuthStore con los datos modificados
+            if (nuevosDatos.medallasDesbloqueadas) {
+              authStore.usuarioActual.medallasDesbloqueadas = nuevosDatos.medallasDesbloqueadas
+              authStore.usuarioActual.medallasCount = nuevosDatos.medallasCount
+            }
+            if (nuevosDatos.nivel) {
+              authStore.usuarioActual.nivel = nuevosDatos.nivel
+            }
+
+            // Actualizamos el localStorage para mantener los cambios al recargar
+            localStorage.setItem('hdp_sesion', JSON.stringify(authStore.usuarioActual))
+          }
+        }
       }
     } catch (error) {
       console.error('Error guardando progreso:', error)
@@ -257,7 +317,7 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     cargarLeccionesPorNivel,
     cargarDatosNivelCompleto,
     obtenerLeccionPorId,
-    guardarProgreso,  
-    limpiarMensajes
+    guardarProgreso,
+    limpiarMensajes,
   }
 })

@@ -13,7 +13,7 @@ export const useAuthStore = defineStore('auth', () => {
   const cargando = ref(false)
   const mensajeError = ref('')
 
-  const sesionGuardada = localStorage.getItem("hdp_sesion")
+  const sesionGuardada = localStorage.getItem('hdp_sesion')
   if (sesionGuardada) {
     usuarioActual.value = JSON.parse(sesionGuardada)
   }
@@ -21,7 +21,7 @@ export const useAuthStore = defineStore('auth', () => {
   // funciones getters (propiedades computadas)
   const estaAutenticado = computed(() => usuarioActual.value !== null)
   const esAdmin = computed(() => usuarioActual.value?.rol === 'admin')
-  const esChild = computed(()=> usuarioActual.value?.rol === 'child')
+  const esChild = computed(() => usuarioActual.value?.rol === 'child')
   const edadUsuario = computed(() => usuarioActual.value?.edad ?? null)
   const nivelUsuario = computed(() => usuarioActual.value?.nivel ?? null)
 
@@ -48,8 +48,11 @@ export const useAuthStore = defineStore('auth', () => {
           rol: usuario.rol,
           edad: usuario.edad,
           nivel: usuario.nivel,
+          medallasCount: usuario.medallasCount || 0,
+          medallasDesbloqueadas: usuario.medallasDesbloqueadas || [],
+          medallaPerfil: usuario.medallaPerfil || null,
         }
-        localStorage.setItem("hdp_sesion", JSON.stringify(usuarioActual.value))
+        localStorage.setItem('hdp_sesion', JSON.stringify(usuarioActual.value))
         return true
       } else {
         mensajeError.value = 'Usuario o contraseña incorrectos'
@@ -64,25 +67,44 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-
   // Funcion para limpiar los datos al salir (cerrar sesión)
   const cerrarSesion = () => {
-
     usuarioActual.value = null
     mensajeError.value = ''
     cargando.value = false // Asegura que la app no se quede congelada procesando
-    localStorage.removeItem("hdp_sesion")
+    localStorage.removeItem('hdp_sesion')
   }
 
   const esNivelBloqueadoParaChild = (numeroNivelCard) => {
-  // Si no hay nadie logueado o es admin, esta regla no aplica aquí
-  if (!usuarioActual.value || usuarioActual.value.rol !== 'child') return false
+    // Si no hay nadie logueado o es admin, esta regla no aplica aquí
+    if (!usuarioActual.value || usuarioActual.value.rol !== 'child') return false
 
-  const nivelDelEstudiante = Number(usuarioActual.value.nivel)
+    const nivelDelEstudiante = Number(usuarioActual.value.nivel)
 
-  // Si el número de la tarjeta (ej: Nivel 4) es mayor que el nivel del niño (ej: Nivel 3), se bloquea (true)
-  return Number(numeroNivelCard) > nivelDelEstudiante
-}
+    return Number(numeroNivelCard) > nivelDelEstudiante
+  }
+
+  // Bloquea el acceso si el nivel de la tarjeta es mayor al nivel actual del niño
+  const equiparMedalla = async (medallaId) => {
+    if (!usuarioActual.value || usuarioActual.value.rol !== 'child') return false
+
+    try {
+      const idUsuario = usuarioActual.value.id
+      const nuevaMedalla = Number(medallaId)
+
+      // Actualizar en la base de datos Dexie
+      await database.usuarios.update(idUsuario, { medallaPerfil: nuevaMedalla })
+
+      usuarioActual.value.medallaPerfil = nuevaMedalla
+
+      // Sincroniza el estado en Pinia y LocalStorage
+      localStorage.setItem('hdp_sesion', JSON.stringify(usuarioActual.value))
+      return true
+    } catch (error) {
+      console.error('Error al equipar la medalla:', error)
+      return false
+    }
+  }
 
   return {
     usuarioActual,
@@ -96,5 +118,6 @@ export const useAuthStore = defineStore('auth', () => {
     iniciarSesion,
     cerrarSesion,
     esNivelBloqueadoParaChild,
+    equiparMedalla,
   }
 })

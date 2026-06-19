@@ -1,13 +1,11 @@
 <template>
   <div class="login-page d-flex justify-content-center align-items-center vh-100">
-
     <div class="floating-bg-item item-1">🚀</div>
     <div class="floating-bg-item item-2">🎨</div>
     <div class="floating-bg-item item-3">🧩</div>
     <div class="floating-bg-item item-4">📐</div>
 
     <div class="card login-card shadow-lg p-4 p-md-5 border-0 rounded-5">
-
       <div class="kid-stars-decor">✨</div>
 
       <div class="text-center mb-4">
@@ -18,12 +16,15 @@
         <p class="text-secondary fw-semibold">Ingresa tus datos para continuar</p>
       </div>
 
-      <div v-if="authStore.mensajeError" class="alert alert-danger text-center rounded-4 fw-bold" role="alert">
+      <div
+        v-if="authStore.mensajeError"
+        class="alert alert-danger text-center rounded-4 fw-bold"
+        role="alert"
+      >
         {{ authStore.mensajeError }}
       </div>
 
       <form @submit.prevent="procesarLogin">
-
         <div class="mb-3">
           <label for="username" class="form-label fw-bold text-secondary">Usuario</label>
           <input
@@ -48,50 +49,56 @@
           />
         </div>
 
-        <button type="submit" class="btn btn-primary w-100 fw-bold btn-kid-size" :disabled="authStore.cargando">
+        <button
+          type="submit"
+          class="btn btn-primary w-100 fw-bold btn-kid-size"
+          :disabled="authStore.cargando"
+        >
           {{ authStore.cargando ? 'Ingresando...' : 'Ingresar' }}
         </button>
 
-        </form>
+        <button
+          @click="$router.push('/')"
+          type="button"
+          class="btn btn-outline-secondary w-100 fw-bold btn-kid-size btn-kid-back mt-3"
+        >
+          Volver al Inicio
+        </button>
+      </form>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
-const router = useRouter();
-const authStore = useAuthStore();
+const router = useRouter()
+const authStore = useAuthStore()
 
-const usuario = ref('');
-const password = ref('');
+const usuario = ref('')
+const password = ref('')
 
-/* Url de la imagen exacta de la captura */
-const imagenLoginUrl = ref('https://cdn-icons-png.flaticon.com/512/3059/3059518.png');
+const imagenLoginUrl = ref('https://cdn-icons-png.flaticon.com/512/3059/3059518.png')
 
 const procesarLogin = async () => {
-
-
   // Se envían los datos ingresados al store para que los busque y compare en IndexedDB
-  const exito = await authStore.iniciarSesion(usuario.value, password.value);
+  const exito = await authStore.iniciarSesion(usuario.value, password.value)
 
   if (exito) {
     if (authStore.esAdmin) {
-      router.push({ name: 'dashboard' });
+      router.push({ name: 'dashboard' })
     } else {
-      router.push({ name: `level${authStore.nivelUsuario}` });
+      router.push({ name: `level${authStore.nivelUsuario}` })
     }
   } else {
-
-    password.value = '';
+    password.value = ''
   }
-};
+}
 </script>
 
 <style scoped>
-/* Fondo con el mismo degradado del home */
 .login-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #e0f2fe 0%, #e0e7ff 50%, #f3e8ff 100%);
@@ -123,7 +130,6 @@ const procesarLogin = async () => {
   background: rgba(244, 63, 94, 0.12);
 }
 
-/* Tarjeta estilo kid space panel */
 .login-card {
   width: 100%;
   max-width: 400px;
@@ -167,12 +173,13 @@ const procesarLogin = async () => {
   outline: none;
 }
 
-/* Boton principal con el efecto hover del home */
 .btn-kid-size {
   border-radius: 1rem;
   padding: 0.7rem;
   font-weight: 800 !important;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.2s ease;
+  transition:
+    transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    filter 0.2s ease;
 }
 .btn-kid-size:hover {
   transform: scale(1.06) rotate(-1deg);
@@ -199,14 +206,30 @@ const procesarLogin = async () => {
   pointer-events: none;
   animation: floatBackground 6s ease-in-out infinite;
 }
-.item-1 { top: 15%; left: 8%; animation-delay: 0s; }
-.item-2 { bottom: 15%; left: 12%; animation-delay: 1.5s; }
-.item-3 { top: 18%; right: 10%; animation-delay: 3s; }
-.item-4 { bottom: 18%; right: 8%; animation-delay: 4.5s; }
+.item-1 {
+  top: 15%;
+  left: 8%;
+  animation-delay: 0s;
+}
+.item-2 {
+  bottom: 15%;
+  left: 12%;
+  animation-delay: 1.5s;
+}
+.item-3 {
+  top: 18%;
+  right: 10%;
+  animation-delay: 3s;
+}
+.item-4 {
+  bottom: 18%;
+  right: 8%;
+  animation-delay: 4.5s;
+}
 
-/* Animaciones compartidas */
 @keyframes kidJump {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0) scale(1) rotate(0deg);
   }
   30% {
@@ -230,7 +253,12 @@ const procesarLogin = async () => {
 }
 
 @keyframes floatBackground {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-15px) rotate(10deg); }
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(10deg);
+  }
 }
 </style>

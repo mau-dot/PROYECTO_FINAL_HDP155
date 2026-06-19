@@ -151,7 +151,15 @@
                 <div
                   class="p-4 bg-white rounded-4 shadow-sm border border-2 border-warning h-100 hover-card"
                 >
-                  <div class="display-1 mb-2 kid-medal">🏅</div>
+                  <div class="mb-2 kid-medal">
+                    <img
+                      v-if="iconoMedallaEquipada"
+                      :src="iconoMedallaEquipada"
+                      alt="Foto de Perfil"
+                      class="avatar-perfil-img"
+                    />
+                    <div v-else class="display-1">🏅</div>
+                  </div>
                   <h3 class="h5 fw-bold text-secondary mb-1">Medallas</h3>
                   <p class="fs-4 fw-bold text-warning mb-0">
                     {{ authStore.usuarioActual?.medallasCount || 0 }} Ganadas
@@ -168,6 +176,55 @@
                   <p class="fs-4 fw-bold text-success mb-0">
                     {{ authStore.usuarioActual?.edad || '?' }} años
                   </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-5 pt-4 border-top border-2">
+              <h4 class="fw-bold text-secondary text-center mb-2">🏆 Tu Cofre de Medallas</h4>
+              <p class="small text-muted text-center mb-4">
+                Haz click en una medalla que hayas ganado para ponértela de perfil
+              </p>
+
+              <div class="row g-3 justify-content-center">
+                <div
+                  v-for="medalla in LISTA_MEDALLAS"
+                  :key="medalla.id"
+                  class="col-6 col-sm-3 text-center"
+                >
+                  <div
+                    class="medal-slot p-3 rounded-4 shadow-sm position-relative"
+                    :class="{
+                      bloqueada: !verificarMedallaGanada(medalla.id),
+                      equipada: authStore.usuarioActual?.medallaPerfil === medalla.id,
+                    }"
+                    :style="{ '--medal-border-color': medalla.colorBorder }"
+                    @click="seleccionarMedalla(medalla.id)"
+                  >
+                    <span
+                      v-if="!verificarMedallaGanada(medalla.id)"
+                      class="badge bg-secondary position-absolute top-0 end-0 m-2 rounded-circle py-1 px-2"
+                      >🔒</span
+                    >
+                    <div
+                      class="mb-2 d-flex justify-content-center align-items-center"
+                      style="height: 70px"
+                    >
+                      <img
+                        :src="medalla.icono"
+                        :alt="medalla.nombre"
+                        class="img-fluid"
+                        style="max-width: 65px; max-height: 65px; object-fit: contain"
+                      />
+                    </div>
+                    <div class="fw-bold small text-dark text-truncate">{{ medalla.nombre }}</div>
+                    <div
+                      class="text-muted text-center"
+                      style="font-size: 0.75rem; line-height: 1.1; margin-top: 2px"
+                    >
+                      {{ medalla.descripcion }}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -191,11 +248,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useAdminStore } from '@/stores/adminStore'
 import Navbar from '@/components/common/Navbar.vue'
 import Footer from '@/components/common/Footer.vue'
+import { LISTA_MEDALLAS, obtenerMedallaPorId } from '@/config/medallas.js'
 
 const authStore = useAuthStore()
 const adminStore = useAdminStore()
@@ -208,6 +266,26 @@ const formAdmin = ref({
   password: '',
   confirmPassword: '',
 })
+
+const iconoMedallaEquipada = computed(() => {
+  const idEquipada = authStore.usuarioActual?.medallaPerfil
+  if (idEquipada) {
+    const datosMedalla = obtenerMedallaPorId(idEquipada)
+    // Retornamos la URL de la medalla si existe, de lo contrario un string vacío
+    return datosMedalla ? datosMedalla.icono : ''
+  }
+  return ''
+})
+
+const verificarMedallaGanada = (medallaId) => {
+  const ganadas = authStore.usuarioActual?.medallasDesbloqueadas || []
+  return ganadas.includes(Number(medallaId))
+}
+
+const seleccionarMedalla = async (medallaId) => {
+  if (!verificarMedallaGanada(medallaId)) return
+  await authStore.equiparMedalla(medallaId)
+}
 
 // Cargar los datos del admin en el formulario cuando entra a la página
 onMounted(() => {
@@ -222,18 +300,16 @@ onUnmounted(() => {
   adminStore.limpiarMensajes()
 })
 
-// Lógica de Validación y Guardado para el Administrador
+// Lógica de validación y guardado para el administrador
 const guardarCambiosAdmin = async () => {
   errorLocal.value = ''
   adminStore.limpiarMensajes()
 
-  // 1. Validar que los campos obligatorios no sean solo espacios
   if (!formAdmin.value.nombre.trim() || !formAdmin.value.usuario.trim()) {
     errorLocal.value = 'El nombre y el usuario no pueden estar vacíos.'
     return
   }
 
-  // 2. Si escribió una contraseña nueva, validar que coincida con la confirmación
   if (formAdmin.value.password || formAdmin.value.confirmPassword) {
     if (formAdmin.value.password !== formAdmin.value.confirmPassword) {
       errorLocal.value = 'Las contraseñas nuevas no coinciden. Verifícalas.'
@@ -241,17 +317,14 @@ const guardarCambiosAdmin = async () => {
     }
   }
 
-  // Empaquetar los datos para el Store
   const datosAEnviar = {
     nombre: formAdmin.value.nombre,
     usuario: formAdmin.value.usuario,
-    password: formAdmin.value.password, // Si está vacío, el adminStore lo ignora de forma inteligente
+    password: formAdmin.value.password,
   }
 
-  // Llamar al adminStore
   const exito = await adminStore.actualizarPerfilAdmin(authStore.usuarioActual.id, datosAEnviar)
 
-  // impiar al ser el cambio exitoso
   if (exito) {
     formAdmin.value.password = ''
     formAdmin.value.confirmPassword = ''
@@ -260,7 +333,6 @@ const guardarCambiosAdmin = async () => {
 </script>
 
 <style scoped>
-/* Transición suave para las tarjetas infantiles */
 .hover-card {
   transition:
     transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
@@ -291,6 +363,17 @@ const guardarCambiosAdmin = async () => {
 }
 .btn-kid-play:hover {
   transform: scale(1.05) rotate(-1deg);
+}
+
+/* Estilo para la medalla equipada  */
+.avatar-perfil-img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 4px solid #ffc107;
+  background-color: white;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
 /* Definición de la animación usando rotateY para giro de izquierda a derecha */
