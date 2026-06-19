@@ -1,14 +1,13 @@
 <template>
   <div class="level-page">
     <div class="container py-4">
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+      <div class="mb-3">
         <button
           class="btn btn-outline-secondary btn-sm fw-bold"
           @click="$router.push({ name: 'home' })"
         >
           ← Regresar al inicio
         </button>
-        <span class="badge rounded-pill bg-warning text-dark fw-bold px-3 py-2">Nivel 3</span>
       </div>
 
       <section class="hero-section p-4 p-lg-5 rounded-5 shadow-sm mb-5">
@@ -22,7 +21,6 @@
               Actividades para 5-6 años: lectura, formación de palabras y operaciones sencillas.
               ¡Supera cada desafío para desbloquear el siguiente reto!
             </p>
-
             <div class="row row-cols-1 row-cols-sm-3 g-3">
               <div class="col">
                 <div class="stat-card p-3 rounded-4 bg-white border shadow-sm h-100">
@@ -50,7 +48,7 @@
               <div class="d-flex align-items-center justify-content-between mb-4">
                 <div>
                   <p class="text-uppercase text-muted fw-semibold mb-1">Menú de lecciones</p>
-                  <h2 class="h4 fw-bold mb-0">Actividades para 5-6 años</h2>
+                  <h2 class="h4 fw-bold mb-0">Tus lecciones creadas</h2>
                 </div>
                 <span class="badge bg-success rounded-pill px-3 py-2">Jugar</span>
               </div>
@@ -59,7 +57,6 @@
                 Retos diseñados para mejorar lectura y operaciones básicas, con actividades
                 interactivas.
               </p>
-
               <div class="d-flex flex-column gap-3">
                 <div class="menu-chip bg-warning-subtle border border-warning-subtle rounded-4 p-3">
                   <div class="fw-bold">Vocabulario</div>
@@ -68,13 +65,13 @@
                   </div>
                 </div>
                 <div class="menu-chip bg-info-subtle border border-info-subtle rounded-4 p-3">
-                  <div class="fw-bold">Completar frases</div>
+                  <div class="fw-bold">Completar oración</div>
                   <div class="small text-secondary">
                     {{ leccionesCompletar?.length || 0 }} disponible(s)
                   </div>
                 </div>
                 <div class="menu-chip bg-success-subtle border border-success-subtle rounded-4 p-3">
-                  <div class="fw-bold">Sumas sencillas</div>
+                  <div class="fw-bold">Matemática</div>
                   <div class="small text-secondary">
                     {{ leccionesMatematica?.length || 0 }} disponible(s)
                   </div>
@@ -87,7 +84,7 @@
 
       <div v-if="cargando" class="text-center py-5">
         <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-2 text-muted">Cargando laboratorio de palabras...</p>
+        <p class="mt-2 text-muted">Cargando lecciones...</p>
       </div>
 
       <div v-else-if="!allLessons || allLessons.length === 0" class="text-center py-5">
@@ -101,9 +98,9 @@
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
           <div>
             <span class="badge rounded-pill bg-primary-subtle text-primary fw-bold px-3 py-2 mb-2">
-              Panel de Retos
+              Menú de Actividades
             </span>
-            <h2 class="fw-bold mb-1">Misiones Intelectuales</h2>
+            <h2 class="fw-bold mb-1">Lecciones creadas</h2>
             <p class="text-secondary mb-0">Selecciona una tarjeta para iniciar cada actividad.</p>
           </div>
         </div>
@@ -114,54 +111,82 @@
             :key="lesson.id"
             class="col-12 col-md-6 col-xl-4"
           >
-            <article
-              class="card level-card h-100 border-0 shadow-sm lesson-card"
-              :class="{ 'lesson-locked': isLessonLocked(allLessons, index) }"
-              :style="isLessonLocked(allLessons, index) ? 'opacity: 0.65;' : ''"
+            <div
+              class="gcard"
+              :class="{ 'gcard--locked': isLessonLocked(allLessons, index) }"
+              @click="!isLessonLocked(allLessons, index) && irAJugar(lesson)"
             >
-              <div class="card-body d-flex flex-column h-100">
-                <div class="lesson-visual mb-3">
-                  {{ isLessonLocked(allLessons, index) ? '🔒' : getLessonEmoji(lesson.tipo) }}
-                </div>
+              <div
+                class="gcard__anim"
+                :class="isLessonLocked(allLessons, index) ? 'anim--locked' : 'anim--' + lesson.tipo"
+              >
+                <template
+                  v-if="lesson.tipo === 'opcion_multiple' && !isLessonLocked(allLessons, index)"
+                >
+                  <div class="bubble b1"></div>
+                  <div class="bubble b2"></div>
+                  <div class="bubble b3"></div>
+                  <i class="ti ti-bulb main-icon icon-green" aria-hidden="true"></i>
+                </template>
 
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                  <span class="badge rounded-pill px-3 py-2" :class="lessonBadgeClass(lesson.tipo)">
-                    {{ lessonTypeLabel(lesson.tipo) }}
-                  </span>
-                  <span class="level-chip">{{ index + 1 }}</span>
-                </div>
+                <template
+                  v-else-if="
+                    lesson.tipo === 'completar_oracion' && !isLessonLocked(allLessons, index)
+                  "
+                >
+                  <span class="star s1">✦</span>
+                  <span class="star s2">✦</span>
+                  <span class="star s3">✦</span>
+                  <i class="ti ti-puzzle main-icon icon-blue" aria-hidden="true"></i>
+                </template>
 
-                <h3 class="h5 fw-bold mb-2">{{ lesson.titulo }}</h3>
-                <p class="text-secondary mb-4">
-                  {{ lesson.descripcion || 'Lección educativa divertida.' }}
+                <template
+                  v-else-if="lesson.tipo === 'matematica' && !isLessonLocked(allLessons, index)"
+                >
+                  <span class="num n1">3</span>
+                  <span class="num n2">+</span>
+                  <span class="num n3">5</span>
+                  <i class="ti ti-math-function main-icon icon-amber" aria-hidden="true"></i>
+                </template>
+
+                <template v-else>
+                  <i class="ti ti-lock lock-icon" aria-hidden="true"></i>
+                </template>
+              </div>
+
+              <div class="gcard__body">
+                <span
+                  class="gcard__badge"
+                  :class="
+                    isLessonLocked(allLessons, index) ? 'badge--locked' : 'badge--' + lesson.tipo
+                  "
+                >
+                  {{
+                    isLessonLocked(allLessons, index) ? 'Bloqueado' : lessonTypeLabel(lesson.tipo)
+                  }}
+                </span>
+                <p class="gcard__title">{{ lesson.titulo }}</p>
+                <p class="gcard__desc">
+                  {{ lesson.descripcion || '¡Vamos a aprender y divertirnos juntos!' }}
                 </p>
 
-                <div class="mt-auto w-100">
-                  <div
-                    v-if="isLessonCompleted(lesson.id)"
-                    class="text-success small fw-bold mb-2 text-center"
-                  >
-                    ✨ ¡Completada!
-                  </div>
-                  <div
-                    v-else-if="isLessonLocked(allLessons, index)"
-                    class="text-muted small fw-bold mb-2 text-center"
-                  >
-                    Completa la misión anterior para desbloquear
-                  </div>
-
-                  <button
-                    class="btn btn-play w-100 btn-sm"
-                    :disabled="isLessonLocked(allLessons, index)"
-                    @click="goToLesson(lesson.id)"
-                  >
-                    {{
-                      isLessonCompleted(lesson.id) ? 'Perfeccionar lección' : '🚀 ¡Empezar Desafío!'
-                    }}
-                  </button>
-                </div>
+                <button
+                  class="gcard__btn"
+                  :class="
+                    isLessonLocked(allLessons, index)
+                      ? 'btn--lock'
+                      : isLessonCompleted(lesson.id)
+                        ? 'btn--done'
+                        : 'btn--play'
+                  "
+                  :disabled="isLessonLocked(allLessons, index)"
+                >
+                  <span v-if="isLessonLocked(allLessons, index)">Bloqueado 🔒</span>
+                  <span v-else-if="isLessonCompleted(lesson.id)">⭐ Repetir</span>
+                  <span v-else>Jugar</span>
+                </button>
               </div>
-            </article>
+            </div>
           </div>
         </div>
       </section>
@@ -172,23 +197,24 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { useLeccionesStore } from '@/stores/leccionesStore'
-import { useAuthStore } from '@/stores/auth' // <-- IMPORTAMOS AUTH
 
 const router = useRouter()
+const authStore = useAuthStore()
 const leccionesStore = useLeccionesStore()
-const authStore = useAuthStore() // <-- INICIALIZAMOS AUTH
 
-// Variables reactivas
+// ===== VARIABLES =====
 const allLessons = ref([])
-const completedLessonIds = ref([])
 const cargando = ref(true)
+const completedLessonIds = ref([])
 
-// Filtros computados
-const leccionesOpcionMultiple = computed(() => allLessons.value.filter((l) => l.tipo === 'opcion_multiple') || [])
-const leccionesCompletar = computed(() => allLessons.value.filter((l) => l.tipo === 'completar_oracion') || [])
-const leccionesMatematica = computed(() => allLessons.value.filter((l) => l.tipo === 'matematica') || [])
+// ===== COMPUTED =====
+const leccionesOpcionMultiple = computed(() => allLessons.value.filter(l => l.tipo === 'opcion_multiple'))
+const leccionesCompletar = computed(() => allLessons.value.filter(l => l.tipo === 'completar_oracion'))
+const leccionesMatematica = computed(() => allLessons.value.filter(l => l.tipo === 'matematica'))
 
+// ===== CARGAR DATOS =====
 onMounted(async () => {
   await loadLevelData()
 })
@@ -196,13 +222,9 @@ onMounted(async () => {
 const loadLevelData = async () => {
   cargando.value = true
   try {
-    // 1. Sacamos el ID real del niño logueado
     const idNinoActual = authStore.usuarioActual?.id || 1 
-
-    // 2. Usamos la FUNCIÓN MAESTRA estandarizada para Nivel 3
     const datos = await leccionesStore.cargarDatosNivelCompleto(3, idNinoActual)
     
-    // 3. Asignamos y ordenamos por ID (como pedía el diseño de este nivel)
     allLessons.value = (datos.lecciones || []).sort((a, b) => a.id - b.id)
     completedLessonIds.value = datos.completadas || []
   } catch (error) {
@@ -214,55 +236,38 @@ const loadLevelData = async () => {
   }
 }
 
-// Funciones de estado
+// ===== LÓGICA DE BLOQUEO =====
 const isLessonCompleted = (lessonId) => completedLessonIds.value.includes(lessonId)
 
-const isLessonLocked = (group, index) => false // Desbloqueado para pruebas
+const isLessonLocked = (lessons, index) => {
+  return false // TODO: Cambiar a la lógica real cuando termines las pruebas
+}
 
-const goToLesson = (lessonId) => {
-  const lesson = allLessons.value.find((l) => l.id === lessonId)
-  if (!lesson) return
-  
+// ===== ETIQUETAS =====
+const lessonTypeLabel = (tipo) => {
+  const map = {
+    opcion_multiple: 'Opción múltiple',
+    completar_oracion: 'Completar oración',
+    matematica: 'Matemática'
+  }
+  return map[tipo] || 'Actividad'
+}
+
+// ===== NAVEGACIÓN =====
+const irAJugar = (leccion) => {
+  if (!leccion?.tipo) return
   const routeMap = {
     opcion_multiple: 'play-multiple',
     completar_oracion: 'play-fill',
-    matematica: 'play-math',
+    matematica: 'play-math'
   }
-  const routeName = routeMap[lesson.tipo] || 'play-multiple'
-  router.push({ name: routeName, params: { id: lessonId } })
-}
-
-// Funciones de diseño visual (UI)
-const lessonTypeLabel = (tipo) => {
-  const labels = {
-    opcion_multiple: 'Opción múltiple',
-    completar_oracion: 'Completar oración',
-    matematica: 'Matemática',
-  }
-  return labels[tipo] || 'Lección'
-}
-
-const lessonBadgeClass = (tipo) => {
-  const classes = {
-    opcion_multiple: 'bg-warning-subtle text-warning border-warning-subtle',
-    completar_oracion: 'bg-info-subtle text-info-emphasis border-info-subtle',
-    matematica: 'bg-success-subtle text-success-emphasis border-success-subtle',
-  }
-  return classes[tipo] || 'bg-secondary text-dark'
-}
-
-const getLessonEmoji = (tipo) => {
-  const map = {
-    opcion_multiple: '📚',
-    completar_oracion: '✏️',
-    matematica: '🔢',
-  }
-  return map[tipo] || '🎯'
+  const routeName = routeMap[leccion.tipo]
+  if (routeName) router.push({ name: routeName, params: { id: leccion.id } })
 }
 </script>
 
 <style scoped>
-/* Contenedor principal con gradiente de mayor contraste */
+/* --- ESTILOS DE LA PÁGINA (PASTEL FLOTANTE) --- */
 .level-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #e0e7ff 0%, #f5f3ff 50%, #fae8ff 100%);
@@ -270,89 +275,6 @@ const getLessonEmoji = (tipo) => {
   overflow: hidden;
 }
 
-/* --- DECORACIONES DE LETRAS Y NÚMEROS FLOTANTES (MÁS VISIBLES) --- */
-.decoracion-letras-numeros {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.item-flotante {
-  position: absolute;
-  font-family: 'Comic Sans MS', 'Fredoka One', sans-serif;
-  font-weight: 900;
-  color: rgba(99, 102, 241, 0.15); /* Opacidad perfecta para que resalte sin estorbar */
-  animation: flotar-item 6s ease-in-out infinite;
-}
-
-/* Posiciones estratégicas para que se distribuyan por toda la pantalla */
-.pos-1 {
-  top: 12%;
-  left: 8%;
-  font-size: 4rem;
-  animation-delay: 0s;
-}
-.pos-2 {
-  top: 8%;
-  left: 45%;
-  font-size: 3.5rem;
-  animation-delay: 1.5s;
-}
-.pos-3 {
-  top: 18%;
-  right: 12%;
-  font-size: 5rem;
-  color: rgba(147, 51, 234, 0.13);
-  animation-delay: 0.7s;
-}
-.pos-4 {
-  top: 48%;
-  left: 5%;
-  font-size: 4.5rem;
-  animation-delay: 2.2s;
-}
-.pos-5 {
-  top: 55%;
-  right: 6%;
-  font-size: 3.8rem;
-  color: rgba(219, 39, 119, 0.12);
-  animation-delay: 1.1s;
-}
-.pos-6 {
-  bottom: 15%;
-  left: 15%;
-  font-size: 4.8rem;
-  animation-delay: 0.3s;
-}
-.pos-7 {
-  bottom: 8%;
-  left: 52%;
-  font-size: 3.5rem;
-  animation-delay: 2.8s;
-}
-.pos-8 {
-  bottom: 18%;
-  right: 15%;
-  font-size: 5.5rem;
-  color: rgba(147, 51, 234, 0.15);
-  animation-delay: 1.9s;
-}
-
-@keyframes flotar-item {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg) scale(1);
-  }
-  50% {
-    transform: translateY(-20px) rotate(15deg) scale(1.08);
-  }
-}
-
-/* --- ESFERAS DE LAS ESQUINAS --- */
 .level-page::before,
 .level-page::after {
   content: '';
@@ -360,33 +282,29 @@ const getLessonEmoji = (tipo) => {
   border-radius: 50%;
   z-index: 0;
   pointer-events: none;
+  animation: float 6s ease-in-out infinite;
 }
 
 .level-page::before {
-  top: -4rem;
-  right: -4rem;
-  width: 24rem;
-  height: 24rem;
-  background: radial-gradient(circle, rgba(129, 140, 248, 0.4) 0%, rgba(147, 51, 234, 0.25) 100%);
-  animation: float-advanced 8s ease-in-out infinite;
-  box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.4);
+  top: -3rem;
+  right: -3rem;
+  width: 20rem;
+  height: 20rem;
+  background: rgba(129, 140, 248, 0.25);
 }
 
 .level-page::after {
-  bottom: -5rem;
-  left: -5rem;
-  width: 26rem;
-  height: 26rem;
-  background: radial-gradient(circle, rgba(192, 132, 252, 0.35) 0%, rgba(99, 102, 241, 0.2) 100%);
-  animation: float-advanced 10s ease-in-out infinite reverse;
-  box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.3);
+  bottom: -3rem;
+  left: -6rem;
+  width: 22rem;
+  height: 22rem;
+  background: rgba(147, 51, 234, 0.18);
 }
 
-/* --- HERO SECTION --- */
 .hero-section {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 60%, #f5f3ff 100%);
-  border: 3px solid rgba(129, 140, 248, 0.35);
-  box-shadow: 0 20px 50px rgba(129, 140, 248, 0.15);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f5f3ff 100%);
+  border: 3px solid rgba(129, 140, 248, 0.25);
+  box-shadow: 0 20px 50px rgba(129, 140, 248, 0.12);
   position: relative;
   z-index: 1;
 }
@@ -394,14 +312,11 @@ const getLessonEmoji = (tipo) => {
 .hero-section h1 {
   color: #4f46e5;
   font-size: 2.8rem;
-  letter-spacing: -0.5px;
-  text-shadow: 0 2px 4px rgba(79, 70, 229, 0.1);
-  animation: brain-bounce 3s ease-in-out infinite;
+  animation: jiggle 2s ease-in-out infinite;
 }
 
 .hero-card,
-.stat-card,
-.lesson-card {
+.stat-card {
   position: relative;
   z-index: 1;
 }
@@ -413,154 +328,337 @@ const getLessonEmoji = (tipo) => {
 
 .stat-card {
   transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   background: #ffffff;
   color: #0f172a;
   border-color: rgba(129, 140, 248, 0.25);
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 30px rgba(129, 140, 248, 0.18);
+  transform: translateY(-4px);
+  box-shadow: 0 18px 30px rgba(129, 140, 248, 0.1);
 }
 
-/* Bloques laterales del submenú */
 .menu-chip {
   transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
   color: #0f172a;
 }
-
 .menu-chip:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 20px rgba(129, 140, 248, 0.15);
+  box-shadow: 0 10px 20px rgba(129, 140, 248, 0.1);
 }
-
 .menu-chip.bg-warning-subtle {
-  background-color: rgba(245, 158, 11, 0.22) !important;
+  background-color: rgba(255, 193, 7, 0.25) !important;
 }
 .menu-chip.bg-info-subtle {
-  background-color: rgba(99, 102, 241, 0.18) !important;
+  background-color: rgba(129, 140, 248, 0.18) !important;
 }
 .menu-chip.bg-success-subtle {
-  background-color: rgba(16, 185, 129, 0.2) !important;
+  background-color: rgba(25, 135, 84, 0.18) !important;
 }
 
-/* Tarjetas de Lección */
-.level-card {
-  border-radius: 1.5rem;
-  transition:
-    transform 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
-    box-shadow 250ms ease;
-  border: 2px solid rgba(129, 140, 248, 0.2);
-  background: #ffffff;
-}
-
-.lesson-card:not(.lesson-locked):hover {
-  transform: translateY(-10px) scale(1.03) translateX(2px);
-  box-shadow: 0 25px 45px rgba(129, 140, 248, 0.22);
-}
-
-.lesson-visual {
-  width: 80px;
-  height: 80px;
-  border-radius: 20px;
-  font-size: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, rgba(129, 140, 248, 0.25), rgba(192, 132, 252, 0.15));
-  box-shadow: 0 10px 25px rgba(129, 140, 248, 0.15);
-  animation: rapid-slide 3.5s ease-in-out infinite;
-}
-
-.level-chip {
-  width: 2.4rem;
-  height: 2.4rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(129, 140, 248, 0.22);
-  color: #4338ca;
-  font-weight: 700;
-}
-
-/* Botón de Lanzamiento */
-.btn-play {
-  background: linear-gradient(90deg, #4f46e5, #7c3aed);
-  border: none;
-  color: #fff;
-  font-weight: 800;
-  font-size: 1rem;
-  transition:
-    transform 200ms ease,
-    box-shadow 200ms ease;
-}
-
-.btn-play:not(:disabled):hover {
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
-}
-
-/* Clases de soporte contextual */
 .badge.bg-primary-subtle {
-  background-color: rgba(129, 140, 248, 0.2) !important;
+  background-color: rgba(129, 140, 248, 0.18) !important;
   color: #4338ca !important;
 }
 .badge.bg-warning-subtle {
-  background-color: rgba(245, 158, 11, 0.18) !important;
-  color: #9a3412 !important;
+  background-color: rgba(255, 193, 7, 0.22) !important;
+  color: #b45309 !important;
 }
 .badge.bg-info-subtle {
-  background-color: rgba(59, 130, 246, 0.15) !important;
-  color: #1e40af !important;
+  background-color: rgba(129, 140, 248, 0.18) !important;
+  color: #4338ca !important;
 }
 .badge.bg-success-subtle {
-  background-color: rgba(16, 185, 129, 0.18) !important;
-  color: #065f46 !important;
+  background-color: rgba(25, 135, 84, 0.2) !important;
+  color: #0f5132 !important;
 }
 
 .border-warning-subtle {
-  border-color: rgba(245, 158, 11, 0.3) !important;
+  border-color: rgba(255, 193, 7, 0.3) !important;
 }
 .border-info-subtle {
-  border-color: rgba(129, 140, 248, 0.3) !important;
+  border-color: rgba(129, 140, 248, 0.28) !important;
 }
 .border-success-subtle {
-  border-color: rgba(16, 185, 129, 0.3) !important;
+  border-color: rgba(25, 135, 84, 0.28) !important;
 }
 
-/* Controladores de Animación */
-@keyframes float-advanced {
-  0%,
-  100% {
-    transform: translateY(0) scale(1) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-20px) scale(1.03) rotate(5deg);
-  }
+/* --- ESTILOS RESTAURADOS DE LAS GAMECARDS --- */
+.gcard {
+  background: #ffffff;
+  border: 0.5px solid #e0e0e0;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s;
+  height: 100%;
+}
+.gcard:hover:not(.gcard--locked) {
+  transform: translateY(-5px);
+}
+.gcard--locked {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
-@keyframes brain-bounce {
-  0%,
-  100% {
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    transform: translateY(-6px) scale(1.01);
-  }
+.gcard__anim {
+  height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.anim--opcion_multiple {
+  background: #eaf3de;
+}
+.anim--completar_oracion {
+  background: #e6f1fb;
+}
+.anim--matematica {
+  background: #faeeda;
+}
+.anim--locked {
+  background: #f5f5f5;
 }
 
-@keyframes rapid-slide {
+.main-icon {
+  font-size: 54px;
+  z-index: 2;
+  position: relative;
+  animation: pop 2s ease-in-out infinite;
+}
+.icon-green {
+  color: #3b6d11;
+}
+.icon-blue {
+  color: #185fa5;
+}
+.icon-amber {
+  color: #854f0b;
+}
+.lock-icon {
+  font-size: 38px;
+  color: #aaa;
+  opacity: 0.5;
+}
+
+/* Burbujas */
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.3;
+  animation: floatCard 3s ease-in-out infinite;
+}
+.b1 {
+  width: 40px;
+  height: 40px;
+  background: #639922;
+  top: 10px;
+  left: 15px;
+  animation-delay: 0s;
+}
+.b2 {
+  width: 25px;
+  height: 25px;
+  background: #97c459;
+  top: 65px;
+  left: 60px;
+  animation-delay: 0.8s;
+}
+.b3 {
+  width: 30px;
+  height: 30px;
+  background: #3b6d11;
+  top: 18px;
+  right: 20px;
+  animation-delay: 1.4s;
+}
+
+/* Estrellas */
+.star {
+  position: absolute;
+  opacity: 0.45;
+  animation: twinkle 2s ease-in-out infinite;
+  font-size: 20px;
+  color: #185fa5;
+}
+.s1 {
+  top: 12px;
+  left: 22px;
+  animation-delay: 0s;
+}
+.s2 {
+  top: 55px;
+  left: 58px;
+  animation-delay: 0.6s;
+}
+.s3 {
+  top: 15px;
+  right: 26px;
+  animation-delay: 1.2s;
+}
+
+/* Números */
+.num {
+  position: absolute;
+  font-size: 26px;
+  font-weight: 500;
+  color: #ba7517;
+  animation: bounceCard 1.5s ease-in-out infinite;
+}
+.n1 {
+  top: 18px;
+  left: 22px;
+  animation-delay: 0s;
+}
+.n2 {
+  top: 60px;
+  left: 65px;
+  animation-delay: 0.5s;
+}
+.n3 {
+  top: 18px;
+  right: 28px;
+  animation-delay: 1s;
+}
+
+.gcard__body {
+  padding: 12px 14px 16px;
+}
+.gcard__badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 9px;
+  border-radius: 999px;
+  margin-bottom: 7px;
+}
+.badge--opcion_multiple {
+  background: #eaf3de;
+  color: #3b6d11;
+}
+.badge--completar_oracion {
+  background: #e6f1fb;
+  color: #185fa5;
+}
+.badge--matematica {
+  background: #faeeda;
+  color: #854f0b;
+}
+.badge--locked {
+  background: #f0f0f0;
+  color: #999;
+}
+
+.gcard__title {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 4px;
+  line-height: 1.4;
+  color: #222;
+}
+.gcard__desc {
+  font-size: 12px;
+  color: #888;
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+.gcard__btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn--play {
+  background: #639922;
+  color: #eaf3de;
+}
+.btn--done {
+  background: #e6f1fb;
+  color: #185fa5;
+  border: 0.5px solid #185fa5;
+}
+.btn--lock {
+  background: #f0f0f0;
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+/* --- CORE KEYFRAMES --- */
+@keyframes float {
   0%,
   100% {
-    transform: scale(1) rotate(0deg);
+    transform: translateY(0px);
   }
   50% {
-    transform: scale(1.06) rotate(4deg);
+    transform: translateY(-20px);
+  }
+}
+@keyframes jiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(2deg);
+  }
+  75% {
+    transform: rotate(-2deg);
+  }
+}
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@keyframes floatCard {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.3);
+  }
+}
+@keyframes bounceCard {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+@keyframes pop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
   }
 }
 
@@ -570,3 +668,4 @@ const getLessonEmoji = (tipo) => {
   }
 }
 </style>
+

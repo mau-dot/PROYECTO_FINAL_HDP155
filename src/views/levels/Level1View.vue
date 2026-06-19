@@ -25,14 +25,12 @@
               <div class="col">
                 <div class="stat-card p-3 rounded-4 bg-white border shadow-sm h-100">
                   <span class="d-block text-uppercase text-muted small mb-2">Lecciones</span>
-                  <!-- Blindaje con ? y || 0 -->
                   <strong class="fs-3">{{ allLessons?.length || 0 }}</strong>
                 </div>
               </div>
               <div class="col">
                 <div class="stat-card p-3 rounded-4 bg-white border shadow-sm h-100">
                   <span class="d-block text-uppercase text-muted small mb-2">Completadas</span>
-                  <!-- Blindaje con ? y || 0 -->
                   <strong class="fs-3">{{ completedLessonIds?.length || 0 }}</strong>
                 </div>
               </div>
@@ -62,21 +60,18 @@
                 <div class="menu-chip bg-warning-subtle border border-warning-subtle rounded-4 p-3">
                   <div class="fw-bold">Opción múltiple</div>
                   <div class="small text-secondary">
-                    <!-- Blindaje con ? y || 0 -->
                     {{ leccionesOpcionMultiple?.length || 0 }} disponible(s)
                   </div>
                 </div>
                 <div class="menu-chip bg-info-subtle border border-info-subtle rounded-4 p-3">
                   <div class="fw-bold">Completar oración</div>
                   <div class="small text-secondary">
-                    <!-- Blindaje con ? y || 0 -->
                     {{ leccionesCompletar?.length || 0 }} disponible(s)
                   </div>
                 </div>
                 <div class="menu-chip bg-success-subtle border border-success-subtle rounded-4 p-3">
                   <div class="fw-bold">Matemática</div>
                   <div class="small text-secondary">
-                    <!-- Blindaje con ? y || 0 -->
                     {{ leccionesMatematica?.length || 0 }} disponible(s)
                   </div>
                 </div>
@@ -115,7 +110,6 @@
             :key="lesson.id"
             class="col-12 col-md-6 col-xl-4"
           >
-            <!-- REEMPLAZO: Cambié goToLesson(lesson.id) por irAJugar(lesson) -->
             <div
               class="gcard"
               :class="{ 'gcard--locked': isLessonLocked(allLessons, index) }"

@@ -109,12 +109,23 @@ const errores = ref(0)
 
 // ===== COMPUTED =====
 const ejercicioActual = computed(() => leccion.value?.contenido[preguntaActualIndex.value])
-const esUltimo = computed(() => preguntaActualIndex.value === (leccion.value?.contenido.length - 1))
+
+const esUltimo = computed(() => {
+  // Aseguramos que haya contenido, si no hay, asumimos que es 0
+  const totalPreguntas = leccion.value?.contenido?.length || 0
+  // Evitamos resultados negativos
+  return totalPreguntas > 0 ? preguntaActualIndex.value === (totalPreguntas - 1) : true
+})
+
 const porcentaje = computed(() => {
   if (!leccion.value) return 0
   if (juegoTerminado.value) return 100
-  return Math.round(((preguntaActualIndex.value + 1) / leccion.value.contenido.length) * 100)
+  
+  const totalPreguntas = leccion.value?.contenido?.length || 1 // Usamos || 1 para evitar dividir entre cero
+  return Math.round(((preguntaActualIndex.value + 1) / totalPreguntas) * 100)
 })
+
+
 const partes = computed(() => ejercicioActual.value?.oracion.split('___') || ['', ''])
 
 const palabrasDisponibles = computed(() => {
@@ -165,7 +176,7 @@ const soltar = () => {
 const siguiente = async () => {
   if (esUltimo.value) {
     juegoTerminado.value = true
-    // ✅ usa guardarProgreso del store, igual que los otros dos Play
+    
     await leccionesStore.guardarProgreso(leccion.value, aciertos.value, errores.value)
     return
   }

@@ -56,7 +56,7 @@
             Casi... La correcta era: <strong>{{ preguntaActual.respuestaCorrecta }}</strong> 😊
           </p>
           <button class="btn btn-warning fw-bold px-4 mt-1" @click="siguiente">
-            {{ esUltima ? 'Ver resultados 🏆' : 'Siguiente →' }}
+            {{ esUltimo ? 'Ver resultados 🏆' : 'Siguiente →' }}
           </button>
         </div>
       </div>
@@ -105,11 +105,20 @@ const aciertos = ref(0)
 const errores = ref(0)
 
 const preguntaActual = computed(() => leccion.value?.contenido[preguntaActualIndex.value])
-const esUltima = computed(() => preguntaActualIndex.value === (leccion.value?.contenido.length - 1))
+
+const esUltimo = computed(() => {
+  // Aseguramos que haya contenido, si no hay, asumimos que es 0
+  const totalPreguntas = leccion.value?.contenido?.length || 0
+  // Evitamos resultados negativos
+  return totalPreguntas > 0 ? preguntaActualIndex.value === (totalPreguntas - 1) : true
+})
+
 const porcentaje = computed(() => {
   if (!leccion.value) return 0
   if (juegoTerminado.value) return 100
-  return Math.round(((preguntaActualIndex.value + 1) / leccion.value.contenido.length) * 100)
+  
+  const totalPreguntas = leccion.value?.contenido?.length || 1 // Usamos || 1 para evitar dividir entre cero
+  return Math.round(((preguntaActualIndex.value + 1) / totalPreguntas) * 100)
 })
 
 onMounted(async () => {
@@ -139,9 +148,8 @@ const responder = (opcion) => {
 }
 
 const siguiente = async () => {
-  if (esUltima.value) {
+  if (esUltimo.value) {
     juegoTerminado.value = true
-    // ✅ guardarProgreso ahora existe en el store
     await leccionesStore.guardarProgreso(leccion.value, aciertos.value, errores.value)
     return
   }
