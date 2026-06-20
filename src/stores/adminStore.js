@@ -3,8 +3,11 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { database } from '@/database/db'
 import { useAuthStore } from '@/stores/auth' // Para actualizar la sesion si cambia sus datos
+import { useCrypto } from '@/composables/useCrypto'
 
 export const useAdminStore = defineStore('admin', () => {
+  const { hashPassword } = useCrypto()
+
   const cargando = ref(false)
   const mensajeError = ref('')
   const mensajeExito = ref('')
@@ -36,7 +39,8 @@ export const useAdminStore = defineStore('admin', () => {
           mensajeError.value = 'La nueva contraseña debe tener al menos 6 caracteres.'
           return false
         }
-        datosAActualizar.password = datosNuevos.password
+        //encriptar la nueva contraseña antes de guardarla
+        datosAActualizar.password = await hashPassword(datosNuevos.password)
       }
 
       // 3. Guardar en Dexie

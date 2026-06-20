@@ -1,4 +1,5 @@
 import Dexie from 'dexie';
+import { useCrypto } from '@/composables/useCrypto'
 
 // ==========================================
 // 1. INICIALIZACION DE LA BASE DE DATOS
@@ -33,22 +34,26 @@ database.version(1).stores({
 // Este evento se dispara SOLO la primera vez que se crea la base de datos en el navegador.
 // Nos sirve para tener datos de prueba listos justo después de clonar el repositorio.
 database.on('populate', async () => {
+  const {hashPassword} = useCrypto;
+
+  const passwordAdmin = await hashPassword('123')
+  const passwordChild = await hashPassword('123')
   
-  // 3.1 Crear el usuario Administrador por defecto
+  //creamos el usuario Administrador 
   await database.usuarios.add({ 
     nombreusuario: 'admin', 
     nombre: 'Administrador General',
-    password: '123', // Para fines académicos y de prueba inicial
+    password: passwordAdmin, 
     rol: 'admin',
     fechaRegistro: new Date().toISOString()
   });
 
   // 3.2 Crear un usuario child de prueba (Nivel 1: 1-2 años)
   await database.usuarios.add({
-    nombreusuario: 'child_prueba',
+    nombreusuario: 'Alumno1',
     nombre: 'Child de Prueba',
     apellido: 'Ejemplo',
-    password: '123',
+    password: passwordChild,
     rol: 'child',
     nivel: 1, // Inicia en el nivel 1 de colores y hábitos
     edad: 2,//edad

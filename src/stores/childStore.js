@@ -2,8 +2,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { database } from '@/database/db'
+import { useCrypto } from '@/composables/useCrypto'
 
 export const useChildStore = defineStore('child', () => {
+  const { hashPassword } = useCrypto()
 
   // ===== DATOS =====
   const listaAlumnos = ref([])
@@ -156,8 +158,12 @@ export const useChildStore = defineStore('child', () => {
         return false
       }
 
-      // 3. Guardar en Dexie
-      await database.usuarios.add(datosAlumno)
+      // 3. Encriptamos la contraseña antes de guardar en Dexie
+      const passwordEncriptada = await hashPassword(datosAlumno.password)
+      await database.usuarios.add({
+        ...datosAlumno,
+        password: passwordEncriptada
+      })
       
       // 4. Refrescar la lista de alumnos para que el Dashboard se actualice instantáneamente
       if (listaAlumnos.value) {
@@ -182,14 +188,15 @@ export const useChildStore = defineStore('child', () => {
     cargando.value = true
 
     try {
-      // 1. Si el admin escribió una nueva contraseña, la validamos. 
-      // Si no escribió nada, la eliminamos del objeto para no borrar su contraseña actual en la BD.
+      // 1. Si el admin escribio una nueva contraseña, la validamos y encriptamos.
+      //si no escribio nada, la eliminamos del objeto para no borrar su contraseña actual en la BD.
       if (datosActualizados.password && datosActualizados.password.trim() !== '') {
         const errorClave = validarPassword(datosActualizados.password)
         if (errorClave) {
           mensajeError.value = errorClave
           return false
         }
+        datosActualizados.password = await hashPassword(datosActualizados.password)
       } else {
         delete datosActualizados.password
       }
@@ -289,7 +296,9 @@ export const useChildStore = defineStore('child', () => {
 
     cargando.value = true
     try {
-      await database.usuarios.update(idNino, { password: nuevaPassword })
+      //encriptamos la nueva contraseña antes de guardarla
+      const passwordEncriptada = await hashPassword(nuevaPassword)
+      await database.usuarios.update(idNino, { password: passwordEncriptada })
       mensajeExito.value = 'Contraseña actualizada correctamente'
       return true
     } catch (error) {
