@@ -31,7 +31,7 @@ database.version(1).stores({
 // 3. DATOS DE PRUEBA
 // ==========================================
 
-const HASH_PASSWORD_PRUEBA = '$2b$10$859wDrZxYxp3DKDYfUmJeOj.h6lRmzTsSEnEgS7gpkMewsl4KCtkO' // 👈 reemplaza esto
+const HASH_PASSWORD_PRUEBA = '$2b$10$859wDrZxYxp3DKDYfUmJeOj.h6lRmzTsSEnEgS7gpkMewsl4KCtkO' 
 
 // Este evento se dispara SOLO la primera vez que se crea la base de datos en el navegador.
 // Nos sirve para tener datos de prueba listos justo después de clonar el repositorio.
