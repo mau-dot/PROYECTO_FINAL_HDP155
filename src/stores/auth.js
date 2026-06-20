@@ -1,8 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { database } from '@/database/db'
+import { useCrypto } from '@/composables/useCrypto'
 
 export const useAuthStore = defineStore('auth', () => {
+  const { compararPassword } = useCrypto()
+
   const normalizarNombreUsuario = (valor) =>
     String(valor ?? '')
       .trim()
@@ -39,7 +42,12 @@ export const useAuthStore = defineStore('auth', () => {
 
       const usuario = await database.usuarios.get({ nombreusuario: nombreUsuarioLimpio })
 
-      if (usuario && usuario.password === password) {
+      // Comparamos la contraseña escrita contra el hash guardado en la DB
+      const passwordCorrecta = usuario
+        ? await compararPassword(password, usuario.password)
+        : false
+
+      if (usuario && passwordCorrecta) {
         // Asignación explícita sin desestructuración pesada
         usuarioActual.value = {
           id: usuario.id,
