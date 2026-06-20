@@ -31,38 +31,48 @@ database.version(1).stores({
 // ==========================================
 // 3. DATOS DE PRUEBA
 // ==========================================
-// Este evento se dispara SOLO la primera vez que se crea la base de datos en el navegador.
-// Nos sirve para tener datos de prueba listos justo después de clonar el repositorio.
-database.on('populate', async () => {
-  const { hashPassword } = useCrypto()
 
-  // Encriptamos las contraseñas de prueba antes de guardarlas
-  const passwordAdmin = await hashPassword('123')
-  const passwordChild = await hashPassword('123')
+// IMPORTANTE: bcrypt (hashPassword) es asíncrono y lento a propósito por seguridad.
 
-  // 3.1 Crear el usuario Administrador por defecto
-  await database.usuarios.add({ 
-    nombreusuario: 'admin', 
-    nombre: 'Administrador General',
-    password: passwordAdmin, // Encriptada, aunque en texto plano siga siendo '123'
-    rol: 'admin',
-    fechaRegistro: new Date().toISOString()
-  });
+// Si se llama DENTRO de la transacción de populate, esta se cierra antes de
+// tiempo y lanza TransactionInactiveError.
 
-  // 3.2 Crear un usuario child de prueba (Nivel 1: 1-2 años)
-  await database.usuarios.add({
-    nombreusuario: 'child_prueba',
-    nombre: 'Child de Prueba',
-    apellido: 'Ejemplo',
-    password: passwordChild, // Encriptada, aunque en texto plano siga siendo '123'
-    rol: 'child',
-    nivel: 1, // Inicia en el nivel 1 de colores y hábitos
-    edad: 2,//edad
-    medallasCount: 0, // Campo adicional que no necesita estar indexado arriba
-    fechaRegistro: new Date().toISOString()
-  });
-
-
-  //debug
-  console.log('Base de datos inicializada con éxito y usuarios de prueba creados.');
+// La solucion de Dexie es envolver
+// las operaciones de escritura en su propio bloque con Dexie.waitFor(),
+// que mantiene la transaccion "viva" mientras esperamos una promesa externa.
+database.on('populate', () => {
+  return Dexie.waitFor(
+    (async () => {
+      const { hashPassword } = useCrypto()
+ 
+      // 1. Encriptamos las contraseñas de prueba
+      const passwordAdmin = await hashPassword('123')
+      const passwordChild = await hashPassword('123')
+ 
+      // 2. Guardamos el usuario Administrador por defecto
+      await database.usuarios.add({
+        nombreusuario: 'admin',
+        nombre: 'Administrador General',
+        password: passwordAdmin,
+        rol: 'admin',
+        fechaRegistro: new Date().toISOString()
+      })
+ 
+      // 3. Guardamos un usuario child de prueba (Nivel 1: 1-2 años)
+      await database.usuarios.add({
+        nombreusuario: 'child_prueba',
+        nombre: 'Child de Prueba',
+        apellido: 'Ejemplo',
+        password: passwordChild,
+        rol: 'child',
+        nivel: 1,
+        edad: 2,
+        medallasCount: 0,
+        fechaRegistro: new Date().toISOString()
+      })
+ 
+      //debug
+      console.log('Base de datos inicializada con éxito y usuarios de prueba creados.')
+    })()
+  )
 });
