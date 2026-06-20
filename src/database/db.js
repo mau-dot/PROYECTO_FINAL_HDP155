@@ -34,26 +34,27 @@ database.version(1).stores({
 // Este evento se dispara SOLO la primera vez que se crea la base de datos en el navegador.
 // Nos sirve para tener datos de prueba listos justo después de clonar el repositorio.
 database.on('populate', async () => {
-  const {hashPassword} = useCrypto;
+  const { hashPassword } = useCrypto()
 
+  // Encriptamos las contraseñas de prueba antes de guardarlas
   const passwordAdmin = await hashPassword('123')
   const passwordChild = await hashPassword('123')
-  
-  //creamos el usuario Administrador 
+
+  // 3.1 Crear el usuario Administrador por defecto
   await database.usuarios.add({ 
     nombreusuario: 'admin', 
     nombre: 'Administrador General',
-    password: passwordAdmin, 
+    password: passwordAdmin, // Encriptada, aunque en texto plano siga siendo '123'
     rol: 'admin',
     fechaRegistro: new Date().toISOString()
   });
 
   // 3.2 Crear un usuario child de prueba (Nivel 1: 1-2 años)
   await database.usuarios.add({
-    nombreusuario: 'Alumno1',
+    nombreusuario: 'child_prueba',
     nombre: 'Child de Prueba',
     apellido: 'Ejemplo',
-    password: passwordChild,
+    password: passwordChild, // Encriptada, aunque en texto plano siga siendo '123'
     rol: 'child',
     nivel: 1, // Inicia en el nivel 1 de colores y hábitos
     edad: 2,//edad
