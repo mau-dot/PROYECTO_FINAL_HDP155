@@ -26,7 +26,7 @@ const toggleTema = () => {
 <template>
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow px-3 fixed-top">
     <div class="container-fluid">
-      <RouterLink class="navbar-brand d-flex align-items-center fw-bold text-warning fs-3" href="#">
+      <RouterLink to="/" class="navbar-brand d-flex align-items-center fw-bold text-warning fs-3" href="#">
         🎈 <span class="ms-2 text-white">HDP Learn</span>
       </RouterLink>
 
