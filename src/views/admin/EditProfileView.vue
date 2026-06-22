@@ -20,7 +20,7 @@
               ¡Datos actualizados exitosamente! Volviendo al panel...
             </div>
 
-            <div v-if="cargandoInicial" class="text-center py-5">
+            <div v-if="childStore.cargandoAlumno" class="text-center py-5">
               <div class="spinner-border text-warning" role="status"></div>
               <p class="mt-3 text-muted fw-bold">Cargando datos del alumno...</p>
             </div>
@@ -97,14 +97,12 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useChildStore } from '@/stores/childStore'
-import { database } from '@/database/db'
 import Navbar from '@/components/common/Navbar.vue'
 
 const route = useRoute()
 const router = useRouter()
 const childStore = useChildStore()
 
-const cargandoInicial = ref(true)
 const exito = ref(false)
 const errorLocal = ref('')
 const confirmarPassword = ref('')
@@ -123,32 +121,25 @@ const idNino = Number(route.params.id) // Sacamos el ID de la URL (/admin/editar
 
 onMounted(async () => {
   childStore.limpiarMensajes()
+  errorLocal.value = ''
   
   if (!idNino) {
     errorLocal.value = 'ID de alumno no válido'
-    cargandoInicial.value = false
     return
   }
 
-  try {
-    // Buscamos directamente al niño en Dexie para llenar el formulario
-    const niñoDb = await database.usuarios.get(idNino)
-    
-    if (!niñoDb || niñoDb.rol !== 'child') {
-      errorLocal.value = 'Alumno no encontrado en la base de datos'
-    } else {
-      // Pre-llenamos el formulario con lo que hay en BD
-      formulario.value.nombreusuario = niñoDb.nombreusuario
-      formulario.value.nombre = niñoDb.nombre
-      formulario.value.apellido = niñoDb.apellido || ''
-      formulario.value.edad = niñoDb.edad
-      formulario.value.nivel = String(niñoDb.nivel) // Select usa strings generalmente
-    }
-  } catch (error) {
-    console.error("Error cargando al niño:", error)
-    errorLocal.value = 'Hubo un problema al cargar los datos del alumno'
-  } finally {
-    cargandoInicial.value = false
+  // Cargar el alumno desde el store
+  const alumno = await childStore.cargarAlumnoPorId(idNino)
+  
+  if (alumno) {
+    // Pre-llenamos el formulario con lo que hay en BD
+    formulario.value.nombreusuario = alumno.nombreusuario
+    formulario.value.nombre = alumno.nombre
+    formulario.value.apellido = alumno.apellido || ''
+    formulario.value.edad = alumno.edad
+    formulario.value.nivel = String(alumno.nivel) // Select usa strings generalmente
+  } else if (childStore.mensajeError) {
+    errorLocal.value = childStore.mensajeError
   }
 })
 

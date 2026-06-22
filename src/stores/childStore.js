@@ -9,11 +9,15 @@ export const useChildStore = defineStore('child', () => {
 
   // ===== DATOS =====
   const listaAlumnos = ref([])
+  const alumnoActual = ref(null)
   const cargando = ref(false)
+  const cargandoAlumno = ref(false)
   const mensajeError = ref('')
   const mensajeExito = ref('')
 
-  // ===== VALIDACIONES =====
+  // ============================================================
+  // VALIDACIONES
+  // ============================================================
 
   // Valida el formato del nombre de usuario
   const validarNombreUsuario = (nombreusuario) => {
@@ -42,38 +46,9 @@ export const useChildStore = defineStore('child', () => {
     return null
   }
 
-  // Valida los datos completos de un niño al registrarlo
-  const validarDatosNino = async (datos, esEdicion = false) => {
-    // Validar nombre de usuario
-    const errorNombre = validarNombreUsuario(datos.nombreusuario)
-    if (errorNombre) return errorNombre
-
-    // Validar contraseña solo si es registro nuevo o si se está cambiando
-    if (!esEdicion || datos.password) {
-      const errorPassword = validarPassword(datos.password)
-      if (errorPassword) return errorPassword
-    }
-
-    if (!datos.nombre || datos.nombre.trim().length < 2) {
-      return 'El nombre real debe tener al menos 2 caracteres'
-    }
-    if (!datos.edad || datos.edad < 1 || datos.edad > 8) {
-      return 'La edad debe estar entre 1 y 8 años'
-    }
-    if (!datos.nivel || datos.nivel < 1 || datos.nivel > 4) {
-      return 'El nivel debe estar entre 1 y 4'
-    }
-
-    // Verificar que el nombre de usuario no esté en uso (solo en registro nuevo)
-    if (!esEdicion) {
-      const existe = await database.usuarios.get({ nombreusuario: datos.nombreusuario })
-      if (existe) return 'Este nombre de usuario ya está en uso'
-    }
-
-    return null // null = sin errores
-  }
-
-  // ===== CALCULOS (GETTERS) =====
+  // ============================================================
+  // COMPUTED - Cálculos derivados (Getters)
+  // ============================================================
 
   // Lista de alumnos con progreso calculado para mostrar en tablas
   const listaAlumnosMapeados = computed(() => {
@@ -89,10 +64,13 @@ export const useChildStore = defineStore('child', () => {
         progreso,
         medallasCount: alumno.medallasCount || 0
       }
-    })
+})
   })
 
-  // KPIs para el panel del administrador
+  // ============================================================
+  // KPIs - Indicadores clave de rendimiento para el Dashboard
+  // ============================================================
+
   const totalAlumnos = computed(() => listaAlumnos.value.length)
 
   const promedioProgreso = computed(() => {
@@ -111,10 +89,13 @@ export const useChildStore = defineStore('child', () => {
     const totalNivel2 = computed(() =>
     listaAlumnos.value.filter(al => al.nivel === 2).length
   )
-    const totalNivel1 = computed(() =>
+  const totalNivel1 = computed(() =>
     listaAlumnos.value.filter(al => al.nivel === 1).length
   )
-  // ===== ACCIONES DEL ADMINISTRADOR =====
+
+  // ============================================================
+  // ACCIONES DEL ADMINISTRADOR - Gestión de alumnos
+  // ============================================================
 
   // Cargar todos los alumnos (solo admin)
   const cargarAlumnos = async () => {
@@ -131,18 +112,43 @@ export const useChildStore = defineStore('child', () => {
     }
   }
 
-  // ===== ACCIONES =====
+  // Cargar un alumno específico por ID (para editar perfil)
+  const cargarAlumnoPorId = async (idAlumno) => {
+    cargandoAlumno.value = true
+    mensajeError.value = ''
+    try {
+      const alumno = await database.usuarios.get(Number(idAlumno))
+      
+      if (!alumno || alumno.rol !== 'child') {
+        mensajeError.value = 'Alumno no encontrado en la base de datos'
+        alumnoActual.value = null
+        return null
+      }
+      
+      alumnoActual.value = alumno
+      return alumno
+    } catch (error) {
+      console.error('Error al cargar alumno:', error)
+      mensajeError.value = 'Hubo un problema al cargar los datos del alumno'
+      alumnoActual.value = null
+      return null
+    } finally {
+      cargandoAlumno.value = false
+    }
+  }
 
+  // Registrar un nuevo alumno
   const registrarAlumno = async (datosAlumno) => {
     limpiarMensajes()
 
-    // 1. Usar tus validadores integrados
+      // 1. Validar nombre de usuario
     const errorUsuario = validarNombreUsuario(datosAlumno.nombreusuario)
     if (errorUsuario) {
       mensajeError.value = errorUsuario
       return false
     }
 
+    // 2. Validar contraseña
     const errorClave = validarPassword(datosAlumno.password)
     if (errorClave) {
       mensajeError.value = errorClave
@@ -151,23 +157,22 @@ export const useChildStore = defineStore('child', () => {
 
     cargando.value = true
     try {
-      // 2. Verificar que no exista otro niño (o admin) con el mismo usuario
+      // 3. Verificar que no exista otro niño (o admin) con el mismo usuario
       const usuarioExistente = await database.usuarios.get({ nombreusuario: datosAlumno.nombreusuario })
       if (usuarioExistente) {
         mensajeError.value = `El nombre de usuario "${datosAlumno.nombreusuario}" ya está en uso. Elige otro.`
         return false
       }
 
-      // 3. Encriptamos la contraseña antes de guardar en Dexie
+      // 4. Encriptar la contraseña antes de guardar en Dexie
       const passwordEncriptada = await hashPassword(datosAlumno.password)
       await database.usuarios.add({
         ...datosAlumno,
         password: passwordEncriptada
       })
       
-      // 4. Refrescar la lista de alumnos para que el Dashboard se actualice instantáneamente
+      // 5. Refrescar la lista de alumnos para que el Dashboard se actualice instantáneamente
       if (listaAlumnos.value) {
-        // Asumiendo que tienes una función cargarAlumnos() en este store
         await cargarAlumnos() 
       }
       
@@ -181,15 +186,16 @@ export const useChildStore = defineStore('child', () => {
       cargando.value = false
     }
   }
-  // ===== ACTUALIZAR ALUMNO =====
+
+  // Actualizar datos de un alumno
   const actualizarAlumno = async (idNino, datosActualizados) => {
     mensajeError.value = ''
     mensajeExito.value = ''
     cargando.value = true
 
     try {
-      // 1. Si el admin escribio una nueva contraseña, la validamos y encriptamos.
-      //si no escribio nada, la eliminamos del objeto para no borrar su contraseña actual en la BD.
+      // 1. Si el admin escribió una nueva contraseña, la validamos y encriptamos
+      //    Si no escribió nada, la eliminamos del objeto para no borrar su contraseña actual en la BD
       if (datosActualizados.password && datosActualizados.password.trim() !== '') {
         const errorClave = validarPassword(datosActualizados.password)
         if (errorClave) {
@@ -201,14 +207,19 @@ export const useChildStore = defineStore('child', () => {
         delete datosActualizados.password
       }
 
-      // 2. Convertimos a números para evitar bugs
+      // 2. Convertir a números para evitar bugs
       if (datosActualizados.edad) datosActualizados.edad = Number(datosActualizados.edad)
       if (datosActualizados.nivel) datosActualizados.nivel = Number(datosActualizados.nivel)
 
-      // 3. Actualizamos en la base de datos usando el ID numérico
+      // 3. Actualizar en la base de datos usando el ID numérico
       await database.usuarios.update(Number(idNino), datosActualizados)
       
-      // 4. Refrescamos la lista global del store para que el Dashboard se actualice al volver
+      // 4. Actualizar el alumno actual si es el mismo que estamos editando
+      if (alumnoActual.value && alumnoActual.value.id === Number(idNino)) {
+        alumnoActual.value = { ...alumnoActual.value, ...datosActualizados }
+      }
+      
+      // 5. Refrescar la lista global del store para que el Dashboard se actualice al volver
       await cargarAlumnos()
       
       mensajeExito.value = 'Perfil del alumno actualizado correctamente'
@@ -235,6 +246,12 @@ export const useChildStore = defineStore('child', () => {
     cargando.value = true
     try {
       await database.usuarios.delete(idAlumno)
+      
+      // Limpiar alumnoActual si es el que se eliminó
+      if (alumnoActual.value && alumnoActual.value.id === Number(idAlumno)) {
+        alumnoActual.value = null
+      }
+      
       await cargarAlumnos()
       mensajeExito.value = 'Alumno eliminado correctamente'
       return true
@@ -247,68 +264,9 @@ export const useChildStore = defineStore('child', () => {
     }
   }
 
-  // ===== ACCIONES DEL NIÑO (sobre su propio perfil) =====
-
-  // Actualizar nombre de usuario propio (niño)
-  const actualizarNombreUsuario = async (idNino, nuevoNombreUsuario) => {
-    mensajeError.value = ''
-    mensajeExito.value = ''
-
-    const error = validarNombreUsuario(nuevoNombreUsuario)
-    if (error) {
-      mensajeError.value = error
-      return false
-    }
-
-    // Verificar que el nuevo nombre no esté en uso por otro usuario
-    const existe = await database.usuarios.get({ nombreusuario: nuevoNombreUsuario })
-    if (existe && existe.id !== idNino) {
-      mensajeError.value = 'Este nombre de usuario ya está en uso'
-      return false
-    }
-
-    cargando.value = true
-    try {
-       await database.usuarios.update(idNino, { 
-       nombreusuario: nuevoNombreUsuario.trim().toLowerCase() 
-    })
-    mensajeExito.value = 'Nombre de usuario actualizado correctamente'
-  return true
-    } catch (error) {
-      console.error('Error al actualizar nombre de usuario:', error)
-      mensajeError.value = 'No se pudo actualizar el nombre de usuario'
-      return false
-    } finally {
-      cargando.value = false
-    }
-  }
-
-  // Actualizar contraseña propia (niño)
-  const actualizarPassword = async (idNino, nuevaPassword) => {
-    mensajeError.value = ''
-    mensajeExito.value = ''
-
-    const error = validarPassword(nuevaPassword)
-    if (error) {
-      mensajeError.value = error
-      return false
-    }
-
-    cargando.value = true
-    try {
-      //encriptamos la nueva contraseña antes de guardarla
-      const passwordEncriptada = await hashPassword(nuevaPassword)
-      await database.usuarios.update(idNino, { password: passwordEncriptada })
-      mensajeExito.value = 'Contraseña actualizada correctamente'
-      return true
-    } catch (error) {
-      console.error('Error al actualizar contraseña:', error)
-      mensajeError.value = 'No se pudo actualizar la contraseña'
-      return false
-    } finally {
-      cargando.value = false
-    }
-  }
+  // ============================================================
+  // ACCIONES DEL NIÑO - Acciones sobre su propio perfil
+  // ============================================================
 
   // Reiniciar progreso de un nivel (niño)
   const reiniciarNivel = async (idNino, nivel) => {
@@ -337,36 +295,51 @@ export const useChildStore = defineStore('child', () => {
     }
   }
 
-  // Limpiar mensajes manualmente si se necesita
+  // ============================================================
+  // UTILIDADES - Funciones auxiliares
+  // ============================================================
+
+  // Limpiar mensajes manualmente
   const limpiarMensajes = () => {
     mensajeError.value = ''
     mensajeExito.value = ''
   }
 
+  // ============================================================
+  // RETURN - Exponer el estado y acciones públicamente
+  // ============================================================
+
   return {
-    // Datos
+    // === STATE ===
     listaAlumnos,
-    listaAlumnosMapeados,
+    alumnoActual,
     cargando,
+    cargandoAlumno,
     mensajeError,
     mensajeExito,
-    // KPIs
+
+    // === COMPUTED ===
+    listaAlumnosMapeados,
+
+    // === KPIs ===
     totalAlumnos,
     promedioProgreso,
     totalNivel1,
     totalNivel2,
     totalNivel3,
     totalNivel4,
-    // Acciones admin
+
+    // === ACCIONES ADMIN ===
     cargarAlumnos,
+    cargarAlumnoPorId,
     registrarAlumno,
     actualizarAlumno,
     eliminarAlumno,
-    // Acciones niño
-    actualizarNombreUsuario,
-    actualizarPassword,
+
+    // === ACCIONES NIÑO ===
     reiniciarNivel,
-    // Utilidades
+
+    // === UTILIDADES ===
     limpiarMensajes
   }
 })

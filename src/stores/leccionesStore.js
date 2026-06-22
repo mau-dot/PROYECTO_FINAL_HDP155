@@ -113,21 +113,6 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     }
   }
 
-  const cargarLeccionesPorNivel = async (nivelRequerido) => {
-    try {
-      cargando.value = true
-      const leccionesDelNivel = await database.lecciones
-        .where({ nivel: Number(nivelRequerido) })
-        .toArray()
-      return leccionesDelNivel
-    } catch (error) {
-      console.error(`Error cargando lecciones del nivel ${nivelRequerido}:`, error)
-      return []
-    } finally {
-      cargando.value = false
-    }
-  }
-
   const cargarDatosNivelCompleto = async (nivelRequerido, usuarioId) => {
     try {
       cargando.value = true
@@ -333,7 +318,6 @@ export const useLeccionesStore = defineStore('lecciones', () => {
     cargarLecciones,
     guardarLeccion,
     eliminarLeccion,
-    cargarLeccionesPorNivel,
     cargarDatosNivelCompleto,
     obtenerLeccionPorId,
     guardarProgreso,
