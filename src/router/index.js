@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth' //import store de Pinia
 
 //Importacion de vistas
@@ -23,7 +23,7 @@ import PlayMathView from '@/views/levels/play/PlayMathView.vue'
 
 //configuracion de rutas
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
     //rutas publicas
     { path: '/', name: 'home', component: HomeView },
