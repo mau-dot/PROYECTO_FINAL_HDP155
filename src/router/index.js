@@ -68,44 +68,44 @@ const router = createRouter({
       path: '/juego/nivel-1',
       name: 'level1',
       component: Level1View,
-      meta: { requiereAuth: true, nivelRequerido: 1 },
+      meta: { requiereAuth: true, nivelRequerido: 1 , requiereChild: true},
     },
     {
       path: '/juego/nivel-2',
       name: 'level2',
       component: Level2View,
-      meta: { requiereAuth: true, nivelRequerido: 2 },
+      meta: { requiereAuth: true, nivelRequerido: 2 , requiereChild: true},
     },
     {
       path: '/juego/nivel-3',
       name: 'level3',
       component: Level3View,
-      meta: { requiereAuth: true, nivelRequerido: 3 },
+      meta: { requiereAuth: true, nivelRequerido: 3 , requiereChild: true},
     },
     {
       path: '/juego/nivel-4',
       name: 'level4',
       component: Level4View,
-      meta: { requiereAuth: true, nivelRequerido: 4 },
+      meta: { requiereAuth: true, nivelRequerido: 4 ,requiereChild: true},
     },
     // Rutas de juego (play) - reutilizables por tipo
     {
       path: '/juego/play/opcion-multiple/:id',
       name: 'play-multiple',
       component: PlayMultipleView,
-      meta: { requiereAuth: true },
+      meta: { requiereAuth: true , requiereChild: true},
     },
     {
       path: '/juego/play/completar/:id',
       name: 'play-fill',
       component: PlayFillView,
-      meta: { requiereAuth: true },
+      meta: { requiereAuth: true , requiereChild : true},
     },
     {
       path: '/juego/play/matematica/:id',
       name: 'play-math',
       component: PlayMathView,
-      meta: { requiereAuth: true },
+      meta: { requiereAuth: true, requiereChild: true},
     },
   ],
 })
@@ -120,6 +120,10 @@ const router = createRouter({
 router.beforeEach((destino) => {
   //instancia del store de autenticacion para obtener los datos en tiempo actual del usuario
   const authStore = useAuthStore()
+
+  if(destino.meta.requiereChild && authStore.esAdmin){
+    return{name : 'dashboard'}
+  }
 
   // 1 ¿La ruta a la que va requiere estar logueado, pero NO está autenticado?
   if (destino.meta.requiereAuth && !authStore.estaAutenticado) {
