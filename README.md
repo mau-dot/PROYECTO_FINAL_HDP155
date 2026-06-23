@@ -1,5 +1,18 @@
 <<<<<<< HEAD
 # ProyectoFinalHDP
+# Aplicación Interactiva para el Aprendizaje Infantil utilizando Vue.js
+
+# Este proyecto consiste en el desarrollo de una aplicación interactiva orientada al aprendizaje de la niñez, implementada con el framework Vue.js.
+
+# Docente
+# Ing. Diego Armando Herrera Flores
+
+# Integrantes
+# Francisco Natanael Yanes Martínez (YM23003)
+# Carlos Mauricio Pablo Guatemala (PG23022)
+# Luis Manuel Galeas Rosales (GR23030)
+# Carlos Alejandro Barrientos Lapa (BL23012)
+# Josué Dariel Martínez León (ML23011)
 
 This template should help get you started developing with Vue 3 in Vite.
 
